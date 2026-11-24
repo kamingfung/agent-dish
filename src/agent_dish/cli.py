@@ -25,6 +25,22 @@ def parse_since(text):
         raise SystemExit(f"--since must look like 2026-10-01, got '{text}'") from None
 
 
+DEFAULT_PORT = (
+    3474  # "DISH" on a phone keypad. Static on purpose: the page keeps its choices per address (port included)
+)
+
+
+def bind(host, port, handler):
+    """Serve on exactly `port`. If it is taken, say so and stop: a quietly different port would break bookmarks."""
+    try:
+        return http.server.ThreadingHTTPServer((host, port), handler)
+    except OSError as err:
+        raise SystemExit(
+            f"port {port} is already in use (agent-dish may already be running at http://{host}:{port}/).\n"
+            "Open that address, or pick another port with --port N."
+        ) from err
+
+
 def render(graph):
     html = resources.files("agent_dish").joinpath("web/template.html").read_text(encoding="utf-8")
     return html.replace("/*DATA*/null", json.dumps(graph, separators=(",", ":")).replace("</", "<\\/"))
@@ -128,8 +144,8 @@ def cmd_serve(args):
         def log_message(self, *a):
             pass
 
-    server = http.server.ThreadingHTTPServer((args.host, args.port), Handler)
-    url = f"http://{args.host}:{args.port}/"
+    server = bind(args.host, args.port, Handler)
+    url = f"http://{args.host}:{server.server_address[1]}/"
     print(
         f"agent-dish live at {url}  (agents: {', '.join(a.name for a in adapters)}; "
         f"last {args.days} days; Ctrl+C to stop)"
@@ -157,7 +173,12 @@ def main(argv=None):
     b.add_argument("--out", help="folder for agent-dish.html (default: current folder)")
     b.set_defaults(fn=cmd_build)
     s = sub.add_parser("serve", parents=[common], help="serve the live dish and keep it updating")
-    s.add_argument("--port", type=int, default=8765)
+    s.add_argument(
+        "--port",
+        type=int,
+        default=DEFAULT_PORT,
+        help=f"default {DEFAULT_PORT}",
+    )
     s.add_argument("--host", default="127.0.0.1")
     s.set_defaults(fn=cmd_serve)
     d = sub.add_parser("demo", help="a dish of invented sessions, to try it before you have any history")
