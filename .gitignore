@@ -22,9 +22,5 @@ agent-dish-demo.html
 *.json.tmp
 node_modules/
 
-# built from src/ by `just npm-sync`; never edit or commit these
-npm/python/
-npm/LICENSE
-dist-npm/
 *.tgz
 dist-zipapp/

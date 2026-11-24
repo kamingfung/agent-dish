@@ -46,6 +46,16 @@ repos:
         additional_dependencies: ["prettier@3.10.1"]
         types_or: [markdown, yaml, json, javascript]
         exclude: ^(uv\.lock|docs/media/)
+      - id: actionlint
+        name: "actionlint (workflow syntax and shell)"
+        entry: uvx --quiet --from actionlint-py==1.7.12.25 actionlint
+        language: system
+        files: ^\.github/workflows/.*\.ya?ml$
+      - id: zizmor
+        name: "zizmor (workflow security: pinned actions, permissions, injection)"
+        entry: uvx --quiet zizmor==1.33.1 --no-progress
+        language: system
+        files: ^\.github/workflows/.*\.ya?ml$
       - id: no-sensitive-info
         name: no personal paths, emails or private terms
         entry: python3 scripts/check_sensitive.py

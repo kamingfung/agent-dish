@@ -2,6 +2,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from agent_dish import __version__
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -16,7 +18,7 @@ def test_the_single_file_build_runs_with_no_install(tmp_path):
     assert pyz.stat().st_size < 400_000  # one small file
 
     version = run(pyz, "--version", cwd=tmp_path)  # a different folder than the repo: nothing but the .pyz is available
-    assert version.returncode == 0 and version.stdout.strip() == "0.1.0"
+    assert version.returncode == 0 and version.stdout.strip() == __version__
 
     demo = run(
         pyz, "demo", "--out", tmp_path / "out", cwd=tmp_path
