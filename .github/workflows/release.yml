@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
@@ -50,7 +50,7 @@ jobs:
       contents: read
       id-token: write # npm "trusted publishing" and provenance: no token is stored anywhere
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: extractions/setup-just@v3
       - uses: actions/setup-node@v4
         with:
