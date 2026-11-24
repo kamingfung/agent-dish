@@ -3,7 +3,7 @@
 **Let's cultivate your AI agents.**
 
 <p align="center">
-  <img src="docs/media/dish.gif" alt="A petri dish of colonies growing over a month of agent sessions" width="760">
+  <img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/dish.gif" alt="A petri dish of colonies growing over a month of agent sessions" width="760">
 </p>
 <p align="center"><sub>Invented demo data. Run <code>agent-dish demo --open</code> to play with it yourself.</sub></p>
 
@@ -29,11 +29,11 @@ Python 3.9 or newer, standard library only.
 
 <table>
 <tr>
-<td width="50%"><img src="docs/media/dish.png" alt="The dish: coloured colonies with titles, session counts and a heat-map floor"><br><sub><b>The dish.</b> Each colour is a colony. The glow underneath is a heat map of where work clusters. The colony with the newest activity sits in the middle.</sub></td>
-<td width="50%"><img src="docs/media/card.png" alt="Clicking a cell shows what it built on and who built on it"><br><sub><b>One session.</b> Click a cell for its agent, tokens, and what it built on or what later built on it.</sub></td>
+<td width="50%"><img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/dish.png" alt="The dish: coloured colonies with titles, session counts and a heat-map floor"><br><sub><b>The dish.</b> Each colour is a colony. The glow underneath is a heat map of where work clusters. The colony with the newest activity sits in the middle.</sub></td>
+<td width="50%"><img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/card.png" alt="Clicking a cell shows what it built on and who built on it"><br><sub><b>One session.</b> Click a cell for its agent, tokens, and what it built on or what later built on it.</sub></td>
 </tr>
 <tr>
-<td colspan="2"><img src="docs/media/legend.png" alt="The dish with its legend open"><br><sub><b>Built-in legend.</b> Size is tokens so far, a ring means working now, black dots are sub-agents, an orange line is a hand-off.</sub></td>
+<td colspan="2"><img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/legend.png" alt="The dish with its legend open"><br><sub><b>Built-in legend.</b> Size is tokens so far, a ring means working now, black dots are sub-agents, an orange line is a hand-off.</sub></td>
 </tr>
 </table>
 
@@ -45,19 +45,19 @@ Use it to see:
 
 ## Supported agents
 
-| Agent | Where it reads | Status |
-|---|---|---|
-| Claude Code | `~/.claude/projects` | Checked against real sessions. Tokens as reported. |
-| Claude Cowork (Claude Desktop agent mode, non-coding) | `~/Library/Application Support/Claude/local-agent-mode-sessions` | Checked against real sessions. Same transcript format as Claude Code. |
-| Kiro | `~/.kiro/sessions` | Checked against real sessions. Kiro records no token counts, so sizes are estimated as characters / 4 and are only comparable between Kiro sessions. |
-| Antigravity (`agy`) | `~/.gemini/antigravity-cli` | Checked on a small number of real sessions. Tokens as reported. |
-| Gemini CLI | `~/.gemini/tmp/*/chats` | **Experimental.** Written from the chat-recording format and tested on a synthetic fixture only. |
-| Codex | `~/.codex/sessions` | **Experimental.** Written from the documented rollout format and tested on a synthetic fixture only. |
+| Agent                                                 | Where it reads                                                   | Status                                                                                                                                               |
+| ----------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code                                           | `~/.claude/projects`                                             | Checked against real sessions. Tokens as reported.                                                                                                   |
+| Claude Cowork (Claude Desktop agent mode, non-coding) | `~/Library/Application Support/Claude/local-agent-mode-sessions` | Checked against real sessions. Same transcript format as Claude Code.                                                                                |
+| Kiro                                                  | `~/.kiro/sessions`                                               | Checked against real sessions. Kiro records no token counts, so sizes are estimated as characters / 4 and are only comparable between Kiro sessions. |
+| Antigravity (`agy`)                                   | `~/.gemini/antigravity-cli`                                      | Checked on a small number of real sessions. Tokens as reported.                                                                                      |
+| Gemini CLI                                            | `~/.gemini/tmp/*/chats`                                          | **Experimental.** Written from the chat-recording format and tested on a synthetic fixture only.                                                     |
+| Codex                                                 | `~/.codex/sessions`                                              | **Experimental.** Written from the documented rollout format and tested on a synthetic fixture only.                                                 |
 
 If an experimental agent misbehaves, please open an issue with a redacted sample. Each location can be overridden with an
 environment variable (`AGENT_DISH_CLAUDE_ROOT`, `..._COWORK_ROOT`, `..._KIRO_ROOT`, `..._ANTIGRAVITY_ROOT`,
 `..._GEMINI_ROOT`, `..._CODEX_ROOT`). Adding another agent is one small file:
-[docs/adding-an-agent.md](docs/adding-an-agent.md).
+[docs/adding-an-agent.md](https://github.com/kamingfung/agent-dish/blob/main/docs/adding-an-agent.md).
 
 ## Use
 
@@ -73,7 +73,7 @@ agent-dish demo --open                  # invented sessions, nothing from your m
 The first run reads every transcript in the window (about 15 seconds for a thousand). After that only transcripts that
 changed are re-read, so live updates take about a second.
 
-How to read what you see: [docs/how-to-read.md](docs/how-to-read.md), or press **Legend** in the page.
+How to read what you see: [docs/how-to-read.md](https://github.com/kamingfung/agent-dish/blob/main/docs/how-to-read.md), or press **Legend** in the page.
 
 ## What it can and cannot tell you
 
@@ -94,12 +94,16 @@ README come from `agent-dish demo`, which is invented.
 ## Development
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/python -m pytest
+just setup    # uv sync, and the git hooks (pre-commit)
+just check    # lint, formatting, tests, secret and personal-info scans: what CI runs
+just --list   # every recipe
 ```
 
-The tests use synthetic transcripts, never real data. The README images are regenerated by
-[scripts/make_media.cjs](scripts/make_media.cjs) from the demo dish.
+The pre-commit hooks and CI block credentials (gitleaks), private keys, large files, home-directory paths, email addresses
+and a private list of your own terms, so the repository stays free of secrets and personal information. The tests use
+synthetic transcripts, never real data. The README images are regenerated by
+[scripts/make_media.cjs](https://github.com/kamingfung/agent-dish/blob/main/scripts/make_media.cjs) from the demo dish.
+See [CONTRIBUTING.md](https://github.com/kamingfung/agent-dish/blob/main/CONTRIBUTING.md).
 
 ## Let's cultivate your AI agents
 

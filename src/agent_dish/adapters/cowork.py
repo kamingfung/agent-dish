@@ -3,6 +3,7 @@
 Desktop agent-mode sessions keep ordinary Claude transcripts, one folder per session:
 ~/Library/Application Support/Claude/local-agent-mode-sessions/<org>/<user>/local_<id>/.claude/projects/<p>/<id>.jsonl
 so the Claude parser reads them unchanged; only where they live and what they are called differ."""
+
 import os
 import sys
 
@@ -23,5 +24,8 @@ class CoworkAdapter(ClaudeAdapter):
 
     def discover(self, cut):
         r = self.root()
-        return self.newer(self.glob(f"{r}/*/*/local_*/.claude/projects/*/*.jsonl")
-                          + self.glob(f"{r}/*/*/local_*/.claude/projects/*/*/subagents/*.jsonl"), cut)
+        return self.newer(
+            self.glob(f"{r}/*/*/local_*/.claude/projects/*/*.jsonl")
+            + self.glob(f"{r}/*/*/local_*/.claude/projects/*/*/subagents/*.jsonl"),
+            cut,
+        )

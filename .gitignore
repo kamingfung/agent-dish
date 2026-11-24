@@ -9,3 +9,15 @@ graph.json
 web.html
 shot*.png
 .venv/
+
+# anything generated from real sessions or holding credentials must never be committed
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+agent-dish.html
+agent-dish-demo.html
+*.json.tmp
+node_modules/

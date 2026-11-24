@@ -20,11 +20,11 @@ def test_demo_is_well_formed_and_uses_every_agent():
     assert all(e["a"] in ids and e["b"] in ids and e["a"] != e["b"] for e in g["edges"])
     for n in g["nodes"]:
         assert n["start"] < n["end"] and n["curve"][-1][1] == n["out"]
-        assert [p[1] for p in n["curve"]] == sorted(p[1] for p in n["curve"])      # tokens only grow
+        assert [p[1] for p in n["curve"]] == sorted(p[1] for p in n["curve"])  # tokens only grow
         assert g["since"] <= n["start"] and n["end"] <= END
     for key, names in g["colonyNames"].items():
         assert names[0][1] == key and [d for d, _ in names] == sorted(d for d, _ in names)
-        assert all(b[0] - a[0] >= 3 * DAY for a, b in zip(names, names[1:]))        # titles drift slowly
+        assert all(b[0] - a[0] >= 3 * DAY for a, b in zip(names, names[1:]))  # titles drift slowly
 
 
 def test_hand_off_file_names_fit_their_colony():

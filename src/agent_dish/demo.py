@@ -2,27 +2,95 @@
 
 Everything here is made up: projects, branches, colony names and numbers. The same seed always gives the same dish.
 """
+
 import math
 import random
 import time
 
 from .themes import DAY
 
-AGENTS = ("claude", "cowork", "kiro", "antigravity", "gemini", "codex")   # the order of the weights below
+AGENTS = ("claude", "cowork", "kiro", "antigravity", "gemini", "codex")  # the order of the weights below
 
 # key, project, (agent weights), first day, last day, sessions, how the colony's title drifts: (day, title)
 COLONIES = [
     ("login flow", "web-app", (6, 0, 2, 1, 1, 1), 0, 11, 16, [(6, "oauth tokens"), (10, "session cookies")]),
-    ("data pipeline", "analytics", (4, 0, 5, 1, 1, 1), 0, 30, 26, [(7, "schema drift"), (14, "backfill job"), (23, "partition costs")]),
+    (
+        "data pipeline",
+        "analytics",
+        (4, 0, 5, 1, 1, 1),
+        0,
+        30,
+        26,
+        [(7, "schema drift"), (14, "backfill job"), (23, "partition costs")],
+    ),
     ("checkout api", "web-app", (5, 0, 2, 2, 1, 2), 3, 21, 20, [(8, "payment retries"), (15, "refund webhook")]),
     ("flaky tests", "web-app", (3, 0, 4, 1, 1, 1), 8, 19, 12, [(13, "ci runners"), (17, "test fixtures")]),
     ("docs rewrite", "docs", (2, 5, 4, 1, 1, 0), 12, 27, 14, [(19, "api reference"), (24, "quickstart guide")]),
     ("mobile release", "mobile-app", (5, 0, 2, 1, 2, 3), 16, 30, 16, [(22, "app store review"), (27, "crash fixes")]),
     ("billing report", "analytics", (3, 3, 2, 1, 1, 2), 21, 30, 10, [(26, "invoice export")]),
 ]
-ADJ = "amber brisk calm daring eager fuzzy gentle hasty ivory jolly keen lively mellow nimble opal plucky quiet rustic sunny tidy umber vivid witty zesty".split()
-VERB = "building chasing drafting fixing hatching mapping nudging pruning racing sorting tracing trimming weaving".split()
-NOUN = "badger comet dahlia ember falcon garnet harbor iris juniper kestrel lantern meadow nectar orchid pebble quartz river thicket willow".split()
+ADJ = [
+    "amber",
+    "brisk",
+    "calm",
+    "daring",
+    "eager",
+    "fuzzy",
+    "gentle",
+    "hasty",
+    "ivory",
+    "jolly",
+    "keen",
+    "lively",
+    "mellow",
+    "nimble",
+    "opal",
+    "plucky",
+    "quiet",
+    "rustic",
+    "sunny",
+    "tidy",
+    "umber",
+    "vivid",
+    "witty",
+    "zesty",
+]
+VERB = [
+    "building",
+    "chasing",
+    "drafting",
+    "fixing",
+    "hatching",
+    "mapping",
+    "nudging",
+    "pruning",
+    "racing",
+    "sorting",
+    "tracing",
+    "trimming",
+    "weaving",
+]
+NOUN = [
+    "badger",
+    "comet",
+    "dahlia",
+    "ember",
+    "falcon",
+    "garnet",
+    "harbor",
+    "iris",
+    "juniper",
+    "kestrel",
+    "lantern",
+    "meadow",
+    "nectar",
+    "orchid",
+    "pebble",
+    "quartz",
+    "river",
+    "thicket",
+    "willow",
+]
 FILES = {  # what each colony's sessions write, so hand-offs read plausibly
     "login flow": ["src/auth/login.py", "src/auth/tokens.py", "src/auth/session.py", "tests/test_login.py"],
     "data pipeline": ["pipelines/ingest.py", "pipelines/schema.yaml", "pipelines/backfill.sql", "tests/test_ingest.py"],
@@ -70,23 +138,55 @@ def demo_graph(days=30, end=None, seed=7):
         dur = min(end - start, math.exp(rng.gauss(math.log(75 * 60), 0.9)))
         stop = max(start + 600, start + dur)
         total = max(1500, int(tokens))
-        divs = sorted(round(rng.uniform(start, stop)) for _ in range(rng.choice([0, 0, 0, 1, 2, 3, 5]) if agent != "codex" else 0))
-        node = dict(id=f"{agent[:2]}-{len(nodes):03d}", label=label(), project=project, branch=branch, agent=agent,
-                    start=round(start), end=round(stop), out=total, inn=total * 3, cache=total * 40, subs=len(divs),
-                    est=agent == "kiro", curve=curve(rng, start, stop, total), divs=divs, kids=0, theme=theme)
+        divs = sorted(
+            round(rng.uniform(start, stop)) for _ in range(rng.choice([0, 0, 0, 1, 2, 3, 5]) if agent != "codex" else 0)
+        )
+        node = dict(
+            id=f"{agent[:2]}-{len(nodes):03d}",
+            label=label(),
+            project=project,
+            branch=branch,
+            agent=agent,
+            start=round(start),
+            end=round(stop),
+            out=total,
+            inn=total * 3,
+            cache=total * 40,
+            subs=len(divs),
+            est=agent == "kiro",
+            curve=curve(rng, start, stop, total),
+            divs=divs,
+            kids=0,
+            theme=theme,
+        )
         nodes.append(node)
         return node
 
     names = {}
     for key, project, weights, d0, d1, n, drift in COLONIES:
         lo, hi = cut + d0 * DAY, min(end, cut + d1 * DAY)
-        members = [session(key, project, pick(rng, weights), rng.uniform(lo, hi), math.exp(rng.gauss(math.log(55000), 1.0)),
-                           "feature/" + key.replace(" ", "-")) for _ in range(n)]
+        members = [
+            session(
+                key,
+                project,
+                pick(rng, weights),
+                rng.uniform(lo, hi),
+                math.exp(rng.gauss(math.log(55000), 1.0)),
+                "feature/" + key.replace(" ", "-"),
+            )
+            for _ in range(n)
+        ]
         by_colony[key] = sorted(members, key=lambda m: m["start"])
         names[key] = [[first_day * DAY, key]] + [[(first_day + d) * DAY, name] for d, name in drift]
     for _ in range(46):  # sessions with no recurring phrase
-        session("unthemed", rng.choice(["web-app", "analytics", "docs", "scratch"]), pick(rng, (5, 1, 5, 1, 1, 1)),
-                rng.uniform(cut, end), math.exp(rng.gauss(math.log(9000), 0.9)), "main")
+        session(
+            "unthemed",
+            rng.choice(["web-app", "analytics", "docs", "scratch"]),
+            pick(rng, (5, 1, 5, 1, 1, 1)),
+            rng.uniform(cut, end),
+            math.exp(rng.gauss(math.log(9000), 0.9)),
+            "main",
+        )
 
     edges, seen = [], set()
 
@@ -94,8 +194,15 @@ def demo_graph(days=30, end=None, seed=7):
         if a["id"] == b["id"] or (a["id"], b["id"]) in seen or b["start"] <= a["start"]:
             return
         seen.add((a["id"], b["id"]))
-        edges.append(dict(a=a["id"], b=b["id"], n=rng.randint(1, 4), t=round(b["start"] + rng.uniform(60, 900)),
-                          paths=rng.sample(FILES[a["theme"]], rng.randint(1, min(3, len(FILES[a["theme"]]))))))
+        edges.append(
+            dict(
+                a=a["id"],
+                b=b["id"],
+                n=rng.randint(1, 4),
+                t=round(b["start"] + rng.uniform(60, 900)),
+                paths=rng.sample(FILES[a["theme"]], rng.randint(1, min(3, len(FILES[a["theme"]])))),
+            )
+        )
 
     for members in by_colony.values():
         for i, b in enumerate(members[1:], 1):
@@ -107,5 +214,13 @@ def demo_graph(days=30, end=None, seed=7):
     by_id = {n["id"]: n for n in nodes}
     for e in edges:
         by_id[e["a"]]["kids"] += 1
-    return dict(days=days, since=cut, generated=end, demo=True, agents=sorted({n["agent"] for n in nodes}),
-                nodes=nodes, edges=edges, colonyNames=names)
+    return dict(
+        days=days,
+        since=cut,
+        generated=end,
+        demo=True,
+        agents=sorted({n["agent"] for n in nodes}),
+        nodes=nodes,
+        edges=edges,
+        colonyNames=names,
+    )

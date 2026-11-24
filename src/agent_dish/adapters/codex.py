@@ -3,6 +3,7 @@
 Written from the documented rollout format (session_meta, response_item, event_msg/token_count) and
 checked only against a synthetic fixture: no real Codex data was available when this was written.
 If your sessions do not appear or look wrong, please open an issue with a redacted sample."""
+
 import json
 import os
 import re
@@ -59,7 +60,9 @@ class CodexAdapter(Adapter):
                     pending.append(mid)
             elif kind == "event_msg" and ptype == "token_count":
                 u = ((p.get("info") or {}).get("total_token_usage")) or {}
-                cur = dict(i=u.get("input_tokens") or 0, o=u.get("output_tokens") or 0, c=u.get("cached_input_tokens") or 0)
+                cur = dict(
+                    i=u.get("input_tokens") or 0, o=u.get("output_tokens") or 0, c=u.get("cached_input_tokens") or 0
+                )
                 if cur["o"] < last["o"]:
                     last = dict(i=0, o=0, c=0)  # counter reset
                 delta = {k: cur[k] - last[k] for k in cur}

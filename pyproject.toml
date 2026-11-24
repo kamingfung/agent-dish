@@ -17,14 +17,46 @@ classifiers = [
   "Topic :: Software Development",
 ]
 
+[project.urls]
+Homepage = "https://github.com/kamingfung/agent-dish"
+Issues = "https://github.com/kamingfung/agent-dish/issues"
+
 [project.optional-dependencies]
 dev = ["pytest>=7"]
 
 [project.scripts]
 agent-dish = "agent_dish.cli:main"
 
+[dependency-groups]
+dev = ["pytest>=7", "ruff>=0.6", "pre-commit>=3.7", "build", "twine"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["docs/media", ".venv", ".cache", "dist"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_dish"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+extend-exclude = [".cache"]
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes, I imports, B bugbear, UP modern syntax, S bandit (security), C4 comprehensions, SIM simplify
+select = ["E", "W", "F", "I", "B", "UP", "S", "C4", "SIM"]
+ignore = [
+  "S101",   # assert: used in tests
+  "S110",   # try/except/pass and
+  "S112",   # try/except/continue: transcripts are other tools' files, so unreadable or odd ones are skipped on purpose
+  "SIM105", # same pattern, spelled with contextlib.suppress
+  "C408",   # dict(a=1) reads better than {"a": 1} for the plain records built here
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/agent_dish/cli.py" = ["S104"]    # --host is the user's choice; the default is 127.0.0.1
+"src/agent_dish/demo.py" = ["S311", "E501"]   # seeded random for invented demo data, not security; wide data tables
+"src/agent_dish/themes.py" = ["E501"]  # one long stop-word list

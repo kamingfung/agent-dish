@@ -5,33 +5,337 @@ into colonies by a greedy keyword cover (a colony is the phrase that covers the 
 sessions), and each colony is then named *per day* from its last few days of text, so the name drifts as
 the work does. Prompt text is only read in memory; callers store the chosen phrases, nothing else.
 """
+
 import collections
 import getpass
 import math
 import os
 import re
 
-STOP = set("""a about above after again all also am an and any are as at be because been before being below between both but by
-can could did do does doing done down during each few for from further get gets got had has have having he her here hers him his how
-i if in into is it its just let like make makes me more most my need needs no nor not now of off on once one only or other our out over
-own same she should so some such than that the their them then there these they this those through to too under until up us use used
-using very want was we were what when where which while who why will with would you your yours yes ok okay please thanks thank
-can't don't it's i'm i'd i've that's there's what's let's isn't doesn't didn't won't also still really actually maybe sure
-claude code file files run running check look looking see add new set go going take try work working think thing things way
-session sessions agent agents task tasks tool tools message messages user assistant yet well next first last
-http https www com org true false none null name repo local idle started background command completed exit
-src py md json yaml yml txt csv html python test tests init utils users repos home tmp private var folders library application support
-nothing anything else previous conversation earlier portion summary primary request say whether png jpg image images pdf page pages
-scratchpad scratch worktree worktrees side-session-notes side subagent type key technical figures fig git show
-main master develop dev feature feat fix fixes hotfix release branch bugfix chore merge pull push commit origin upstream
-mcp turn status report tag read edit write bash ran output result results error update updated create created kiro codex antigravity gemini""".split())
+STOP = set(  # noqa: C405 (split of one long string, clearer than a set literal)
+    [
+        "a",
+        "about",
+        "above",
+        "after",
+        "again",
+        "all",
+        "also",
+        "am",
+        "an",
+        "and",
+        "any",
+        "are",
+        "as",
+        "at",
+        "be",
+        "because",
+        "been",
+        "before",
+        "being",
+        "below",
+        "between",
+        "both",
+        "but",
+        "by",
+        "can",
+        "could",
+        "did",
+        "do",
+        "does",
+        "doing",
+        "done",
+        "down",
+        "during",
+        "each",
+        "few",
+        "for",
+        "from",
+        "further",
+        "get",
+        "gets",
+        "got",
+        "had",
+        "has",
+        "have",
+        "having",
+        "he",
+        "her",
+        "here",
+        "hers",
+        "him",
+        "his",
+        "how",
+        "i",
+        "if",
+        "in",
+        "into",
+        "is",
+        "it",
+        "its",
+        "just",
+        "let",
+        "like",
+        "make",
+        "makes",
+        "me",
+        "more",
+        "most",
+        "my",
+        "need",
+        "needs",
+        "no",
+        "nor",
+        "not",
+        "now",
+        "of",
+        "off",
+        "on",
+        "once",
+        "one",
+        "only",
+        "or",
+        "other",
+        "our",
+        "out",
+        "over",
+        "own",
+        "same",
+        "she",
+        "should",
+        "so",
+        "some",
+        "such",
+        "than",
+        "that",
+        "the",
+        "their",
+        "them",
+        "then",
+        "there",
+        "these",
+        "they",
+        "this",
+        "those",
+        "through",
+        "to",
+        "too",
+        "under",
+        "until",
+        "up",
+        "us",
+        "use",
+        "used",
+        "using",
+        "very",
+        "want",
+        "was",
+        "we",
+        "were",
+        "what",
+        "when",
+        "where",
+        "which",
+        "while",
+        "who",
+        "why",
+        "will",
+        "with",
+        "would",
+        "you",
+        "your",
+        "yours",
+        "yes",
+        "ok",
+        "okay",
+        "please",
+        "thanks",
+        "thank",
+        "can't",
+        "don't",
+        "it's",
+        "i'm",
+        "i'd",
+        "i've",
+        "that's",
+        "there's",
+        "what's",
+        "let's",
+        "isn't",
+        "doesn't",
+        "didn't",
+        "won't",
+        "also",
+        "still",
+        "really",
+        "actually",
+        "maybe",
+        "sure",
+        "claude",
+        "code",
+        "file",
+        "files",
+        "run",
+        "running",
+        "check",
+        "look",
+        "looking",
+        "see",
+        "add",
+        "new",
+        "set",
+        "go",
+        "going",
+        "take",
+        "try",
+        "work",
+        "working",
+        "think",
+        "thing",
+        "things",
+        "way",
+        "session",
+        "sessions",
+        "agent",
+        "agents",
+        "task",
+        "tasks",
+        "tool",
+        "tools",
+        "message",
+        "messages",
+        "user",
+        "assistant",
+        "yet",
+        "well",
+        "next",
+        "first",
+        "last",
+        "http",
+        "https",
+        "www",
+        "com",
+        "org",
+        "true",
+        "false",
+        "none",
+        "null",
+        "name",
+        "repo",
+        "local",
+        "idle",
+        "started",
+        "background",
+        "command",
+        "completed",
+        "exit",
+        "src",
+        "py",
+        "md",
+        "json",
+        "yaml",
+        "yml",
+        "txt",
+        "csv",
+        "html",
+        "python",
+        "test",
+        "tests",
+        "init",
+        "utils",
+        "users",
+        "repos",
+        "home",
+        "tmp",
+        "private",
+        "var",
+        "folders",
+        "library",
+        "application",
+        "support",
+        "nothing",
+        "anything",
+        "else",
+        "previous",
+        "conversation",
+        "earlier",
+        "portion",
+        "summary",
+        "primary",
+        "request",
+        "say",
+        "whether",
+        "png",
+        "jpg",
+        "image",
+        "images",
+        "pdf",
+        "page",
+        "pages",
+        "scratchpad",
+        "scratch",
+        "worktree",
+        "worktrees",
+        "side-session-notes",
+        "side",
+        "subagent",
+        "type",
+        "key",
+        "technical",
+        "figures",
+        "fig",
+        "git",
+        "show",
+        "main",
+        "master",
+        "develop",
+        "dev",
+        "feature",
+        "feat",
+        "fix",
+        "fixes",
+        "hotfix",
+        "release",
+        "branch",
+        "bugfix",
+        "chore",
+        "merge",
+        "pull",
+        "push",
+        "commit",
+        "origin",
+        "upstream",
+        "mcp",
+        "turn",
+        "status",
+        "report",
+        "tag",
+        "read",
+        "edit",
+        "write",
+        "bash",
+        "ran",
+        "output",
+        "result",
+        "results",
+        "error",
+        "update",
+        "updated",
+        "create",
+        "created",
+        "kiro",
+        "codex",
+        "antigravity",
+        "gemini",
+    ]
+)
 STOP |= {w.lower() for w in re.split(r"\W+", getpass.getuser()) if w}
 STOP |= {w.lower() for w in re.split(r"\W+", os.path.basename(os.path.expanduser("~"))) if w}
 
 TOKEN = re.compile(r"[a-z][a-z\-]{2,24}")
 DAY = 86400
-MIN_DAYS_BETWEEN = 3   # a colony keeps its title at least this long
-SWITCH_MARGIN = 1.6     # the new title must score this many times the current one
+MIN_DAYS_BETWEEN = 3  # a colony keeps its title at least this long
+SWITCH_MARGIN = 1.6  # the new title must score this many times the current one
 
 
 def terms(text):
@@ -66,8 +370,13 @@ def themes_for(docs, max_themes=14):
         for term, k in c.items():
             if k >= (1 if " " in term else 2):  # a phrase once is a signal; a lone word needs repeating
                 post[term].add(s)
-    idf = lambda term: math.log(n_docs / len(post[term]))
-    boost = lambda term: 2.0 if " " in term else 1.0
+
+    def idf(term):
+        return math.log(n_docs / len(post[term]))
+
+    def boost(term):
+        return 2.0 if " " in term else 1.0
+
     cap = max(0.15 * n_docs, 5)  # not boilerplate every session repeats (but small data sets still need room)
     cand = [t for t, d in post.items() if 3 <= len(d) <= cap]
     cand.sort(key=lambda t: -len(post[t]) * idf(t) * boost(t))
@@ -110,8 +419,13 @@ def colony_names(by_day, assign, first_day, last_day, window=3):
             seen |= set(c)
         df.update(seen)
     out = {}
-    idf = lambda term: math.log(n_docs / df[term]) if df.get(term) else 0.0
-    boost = lambda term: 2.0 if " " in term else 1.0
+
+    def idf(term):
+        return math.log(n_docs / df[term]) if df.get(term) else 0.0
+
+    def boost(term):
+        return 2.0 if " " in term else 1.0
+
     for key, sids in members.items():
         names, cur, changed = [[first_day * DAY, key]], key, first_day
         for d in range(first_day, last_day + 1):
@@ -125,7 +439,9 @@ def colony_names(by_day, assign, first_day, last_day, window=3):
             need = 2 if len(sids) > 1 else 1
             best, score = None, 0.0
             for term, k in win.items():
-                if k < need or df[term] > max(0.15 * n_docs, 5) or (" " not in term and k < 3):  # a lone word needs real backing
+                if (
+                    k < need or df[term] > max(0.15 * n_docs, 5) or (" " not in term and k < 3)
+                ):  # a lone word needs real backing
                     continue
                 sc = k * idf(term) * boost(term)
                 if sc > score:

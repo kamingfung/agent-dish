@@ -1,0 +1,44 @@
+name: release
+# Push a tag like v0.1.0 (matching pyproject.toml) and this tests, builds and publishes a GitHub release with the wheel
+# and sdist attached. Publishing to PyPI is a second job that stays off until you opt in (see docs/releasing.md).
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: extractions/setup-just@v3
+      - run: just release-check "$GITHUB_REF_NAME"
+      - run: uv sync --locked
+      - run: just test
+      - run: just build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          awk -v t="${GITHUB_REF_NAME#v}" '$0 ~ "^## "t"( |$)"{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file notes.md
+  pypi:
+    needs: build
+    if: vars.PUBLISH_TO_PYPI == 'true' # off until you set this repository variable
+    runs-on: ubuntu-24.04
+    environment: pypi
+    permissions:
+      id-token: write # PyPI "trusted publishing": no token is stored anywhere
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

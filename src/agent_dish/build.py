@@ -1,9 +1,9 @@
 """Turn agent transcripts into graph.json: one cell per session, plus the data the dish animates."""
+
 import collections
 import hashlib
 import json
 import os
-import pickle
 import time
 
 from .adapters import selected
@@ -22,19 +22,21 @@ def project_of(cwd):
 
 
 def cached_parse(adapter, path, cache_dir):
-    """Parse one transcript once per (mtime, size): a live refresh only re-reads what changed."""
+    """Parse one transcript once per (mtime, size): a live refresh only re-reads what changed.
+
+    The cache is plain JSON (not pickle), so a damaged or planted cache file can only fail to parse, never run code."""
     st = os.stat(path)
-    key = hashlib.md5(f"{adapter.name}|{adapter.version}|{path}|{st.st_mtime_ns}|{st.st_size}".encode()).hexdigest()
-    cp = os.path.join(cache_dir, key + ".pkl")
+    key = hashlib.sha256(f"{adapter.name}|{adapter.version}|{path}|{st.st_mtime_ns}|{st.st_size}".encode()).hexdigest()
+    cp = os.path.join(cache_dir, key[:32] + ".json")
     try:
-        with open(cp, "rb") as fh:
-            return pickle.load(fh), False
-    except Exception:
+        with open(cp, encoding="utf-8") as fh:
+            return json.load(fh), False
+    except (OSError, ValueError):
         pass
     result = adapter.parse(path)
     os.makedirs(cache_dir, exist_ok=True)
-    with open(cp + ".tmp", "wb") as fh:
-        pickle.dump(result, fh)
+    with open(cp + ".tmp", "w", encoding="utf-8") as fh:
+        json.dump(result, fh)
     os.replace(cp + ".tmp", cp)
     return result, True
 
@@ -59,21 +61,43 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
     cache_dir = os.path.join(out_dir, "cache")
     t0, fresh_files, total_files = time.time(), 0, 0
 
-    S, msgs, by_day, sub_starts = {}, {}, collections.defaultdict(lambda: collections.defaultdict(collections.Counter)), []
-    est = {}
+    S, msgs, by_day, sub_starts = (
+        {},
+        {},
+        collections.defaultdict(lambda: collections.defaultdict(collections.Counter)),
+        [],
+    )
     for adapter in selected(agents):
         files = adapter.discover(cut)
         total_files += len(files)
         if adapter.experimental and files:
-            log(f"note: {adapter.label} support is experimental (written from the format's docs, not checked against real data)")
+            log(
+                f"note: {adapter.label} support is experimental "
+                "(written from the format's docs, not checked against real data)"
+            )
         for f in files:
             r, fresh = cached_parse(adapter, f, cache_dir)
             fresh_files += fresh
             for sid, n in r["nodes"].items():
                 if n["hi"] < cut:
                     continue
-                s = S.setdefault(sid, dict(id=sid, label=sid[:8], project="?", branch="", agent=n["agent"], start=n["lo"], end=n["hi"],
-                                           out=0, inn=0, cache=0, subs=0, est=adapter.tokens_estimated))
+                s = S.setdefault(
+                    sid,
+                    dict(
+                        id=sid,
+                        label=sid[:8],
+                        project="?",
+                        branch="",
+                        agent=n["agent"],
+                        start=n["lo"],
+                        end=n["hi"],
+                        out=0,
+                        inn=0,
+                        cache=0,
+                        subs=0,
+                        est=adapter.tokens_estimated,
+                    ),
+                )
                 s["start"], s["end"] = min(s["start"], max(n["lo"], cut)), max(s["end"], n["hi"])
                 if n["cwd"] and s["project"] == "?":
                     s["project"] = project_of(n["cwd"])
@@ -88,8 +112,14 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
             for mid, m in r["msgs"].items():
                 if m["t"] < cut or m["sid"] not in S:
                     continue
-                cur = msgs.setdefault((adapter.name, mid), dict(sid=m["sid"], t=m["t"], out=0, inn=0, cache=0, events=m["events"]))
-                cur["out"], cur["inn"], cur["cache"] = max(cur["out"], m["out"]), max(cur["inn"], m["inn"]), max(cur["cache"], m["cache"])
+                cur = msgs.setdefault(
+                    (adapter.name, mid), dict(sid=m["sid"], t=m["t"], out=0, inn=0, cache=0, events=m["events"])
+                )
+                cur["out"], cur["inn"], cur["cache"] = (
+                    max(cur["out"], m["out"]),
+                    max(cur["inn"], m["inn"]),
+                    max(cur["cache"], m["cache"]),
+                )
                 if len(m["events"]) > len(cur["events"]):
                     cur["events"] = m["events"]
                 for _, p, t in m["events"]:
@@ -101,7 +131,9 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
     growth, events, written = collections.defaultdict(list), collections.defaultdict(list), collections.defaultdict(set)
     for rec in msgs.values():
         s = S[rec["sid"]]
-        s["out"] += rec["out"]; s["inn"] += rec["inn"]; s["cache"] += rec["cache"]
+        s["out"] += rec["out"]
+        s["inn"] += rec["inn"]
+        s["cache"] += rec["cache"]
         growth[rec["sid"]].append((rec["t"], rec["out"]))
         for kind, p, t in rec["events"]:
             events[p].append((t, rec["sid"], kind))
@@ -117,11 +149,12 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
         for t, sid, kind in evs:
             if kind == "w":
                 first_write.setdefault(sid, t)
-        for t, sid, kind in evs:
+        for t, sid, _kind in evs:
             for a, tw in first_write.items():
                 if a != sid and t > tw:
                     h = hand[(a, sid)]
-                    h["n"] += 1; h["paths"][p] += 1
+                    h["n"] += 1
+                    h["paths"][p] += 1
                     h["t"] = min(h["t"] or t, t)
                     taker[a][p].add(sid)
 
@@ -140,15 +173,28 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
         s["subs"] = len(divs[sid])
         s["kids"] = len({b for p in written[sid] for b in taker[sid].get(p, ())})
         nodes.append(s)
-    edges = [dict(a=a, b=b, n=h["n"], t=round(h["t"]), paths=[p for p, _ in h["paths"].most_common(5)])
-             for (a, b), h in hand.items() if a in S and b in S]
+    edges = [
+        dict(a=a, b=b, n=h["n"], t=round(h["t"]), paths=[p for p, _ in h["paths"].most_common(5)])
+        for (a, b), h in hand.items()
+        if a in S and b in S
+    ]
 
-    graph = dict(days=days, since=cut, generated=now, agents=sorted({n["agent"] for n in nodes}), nodes=nodes, edges=edges, colonyNames=names)
+    graph = dict(
+        days=days,
+        since=cut,
+        generated=now,
+        agents=sorted({n["agent"] for n in nodes}),
+        nodes=nodes,
+        edges=edges,
+        colonyNames=names,
+    )
     tmp = os.path.join(out_dir, "graph.json.tmp")
     with open(tmp, "w") as fh:
         json.dump(graph, fh)
     os.replace(tmp, os.path.join(out_dir, "graph.json"))
     themed = collections.Counter(n["theme"] for n in nodes)
-    log(f"{total_files} transcripts ({fresh_files} read, {total_files - fresh_files} cached) -> {len(nodes)} sessions, "
-        f"{len(edges)} hand-offs, {len(themed) - ('unthemed' in themed)} colonies, {time.time() - t0:.1f}s")
+    log(
+        f"{total_files} transcripts ({fresh_files} read, {total_files - fresh_files} cached) -> {len(nodes)} sessions, "
+        f"{len(edges)} hand-offs, {len(themed) - ('unthemed' in themed)} colonies, {time.time() - t0:.1f}s"
+    )
     return graph

@@ -1,15 +1,13 @@
 """agent-dish command line: build a snapshot, or serve the live dish."""
+
 import argparse
 import calendar
-import glob
 import http.server
 import json
 import os
-import subprocess
-import sys
 import threading
-import urllib.parse
 import time
+import urllib.parse
 import webbrowser
 from importlib import resources
 
@@ -24,7 +22,7 @@ def parse_since(text):
     try:
         return calendar.timegm(time.strptime(text, "%Y-%m-%d")) if text else None
     except ValueError:
-        raise SystemExit(f"--since must look like 2026-10-01, got '{text}'")
+        raise SystemExit(f"--since must look like 2026-10-01, got '{text}'") from None
 
 
 def render(graph):
@@ -50,7 +48,11 @@ def cmd_agents(_):
         root = a.root()
         found = len(a.discover(0)) if os.path.exists(root) else 0
         flag = " (experimental)" if a.experimental else ""
-        print(f"  {a.name:12} {a.label}{flag}: {root}  [{found} transcripts]" if found else f"  {a.name:12} {a.label}{flag}: {root}  [not found]")
+        print(
+            f"  {a.name:12} {a.label}{flag}: {root}  [{found} transcripts]"
+            if found
+            else f"  {a.name:12} {a.label}{flag}: {root}  [not found]"
+        )
 
 
 def cmd_build(args):
@@ -67,6 +69,7 @@ def cmd_build(args):
 
 def cmd_demo(args):
     from .demo import demo_graph
+
     end = parse_since(args.end) if args.end else None
     graph = demo_graph(args.days, end, args.seed)
     out = os.path.abspath(args.out or ".")
@@ -104,7 +107,9 @@ def cmd_serve(args):
                     since = parse_since(asked)
                 except SystemExit:
                     since = None
-                if since and since != state["since"]:  # someone picked another start date: rebuild from it (cached, so quick)
+                if (
+                    since and since != state["since"]
+                ):  # someone picked another start date: rebuild from it (cached, so quick)
                     state["since"] = since
                     state["graph"] = build(args.days, args.agents, home, log=lambda *_: None, since=since)
                 body, kind = json.dumps(state["graph"]).encode(), "application/json"
@@ -125,7 +130,10 @@ def cmd_serve(args):
 
     server = http.server.ThreadingHTTPServer((args.host, args.port), Handler)
     url = f"http://{args.host}:{args.port}/"
-    print(f"agent-dish live at {url}  (agents: {', '.join(a.name for a in adapters)}; last {args.days} days; Ctrl+C to stop)")
+    print(
+        f"agent-dish live at {url}  (agents: {', '.join(a.name for a in adapters)}; "
+        f"last {args.days} days; Ctrl+C to stop)"
+    )
     if args.open:
         webbrowser.open(url)
     try:
@@ -135,7 +143,9 @@ def cmd_serve(args):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="agent-dish", description="Your AI coding-agent sessions as living cells in a petri dish.")
+    p = argparse.ArgumentParser(
+        prog="agent-dish", description="Your AI coding-agent sessions as living cells in a petri dish."
+    )
     p.add_argument("--version", action="version", version=__version__)
     sub = p.add_subparsers(dest="cmd", required=True)
     common = argparse.ArgumentParser(add_help=False)

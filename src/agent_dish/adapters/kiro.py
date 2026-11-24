@@ -2,6 +2,7 @@
 
 Kiro does not record token counts, so output tokens are estimated as characters / 4 of what the agent
 wrote (text and tool arguments). Sizes are comparable between Kiro sessions, not with other agents."""
+
 import json
 import os
 

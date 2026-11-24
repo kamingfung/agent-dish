@@ -10,19 +10,23 @@ def test_build_end_to_end(roots):
     by = {n["id"]: n for n in g["nodes"]}
     assert set(by) == {"A", "B", "sess_k1", "uuid-1", "cdx-1", "cw1", "gem-1"}
     assert {n["agent"] for n in g["nodes"]} == {"claude", "cowork", "kiro", "antigravity", "gemini", "codex"}
-    assert by["A"]["out"] == 155 and by["A"]["subs"] == 1       # sub-agent tokens fold into the parent
+    assert by["A"]["out"] == 155 and by["A"]["subs"] == 1  # sub-agent tokens fold into the parent
     assert by["sess_k1"]["est"] and not by["A"]["est"]
     assert g["agents"] == ["antigravity", "claude", "codex", "cowork", "gemini", "kiro"]
     # B read a file A wrote, and the Kiro session edited it: hand-offs A -> B and A -> Kiro (edits count too)
-    assert sorted((e["a"], e["b"]) for e in g["edges"] if e["a"] == "A") == [("A", "B"), ("A", "gem-1"), ("A", "sess_k1")]
+    assert sorted((e["a"], e["b"]) for e in g["edges"] if e["a"] == "A") == [
+        ("A", "B"),
+        ("A", "gem-1"),
+        ("A", "sess_k1"),
+    ]
     assert by["A"]["kids"] == 3 and by["B"]["kids"] == 0
     assert all(set(n) >= {"curve", "divs", "theme", "label", "project", "start", "end"} for n in g["nodes"])
-    assert by["A"]["curve"][-1][1] == 155                        # cumulative tokens end at the total
+    assert by["A"]["curve"][-1][1] == 155  # cumulative tokens end at the total
 
 
 def test_since_beats_days_and_filters_old_sessions(roots):
     g = build(days=30, agents="claude", now=NOW, since=NOW - 3 * 86400 + 400, log=lambda *_: None)
-    assert {n["id"] for n in g["nodes"]} == {"B"}               # A's activity ended before the start date
+    assert {n["id"] for n in g["nodes"]} == {"B"}  # A's activity ended before the start date
     assert g["since"] == NOW - 3 * 86400 + 400
 
 

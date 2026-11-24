@@ -1,0 +1,8 @@
+title = "agent-dish gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "generated demo media is binary and invented"
+paths = ['''docs/media/.*''']

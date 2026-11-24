@@ -5,7 +5,10 @@ from .cowork import CoworkAdapter
 from .gemini import GeminiAdapter
 from .kiro import KiroAdapter
 
-ADAPTERS = {a.name: a for a in (ClaudeAdapter(), CoworkAdapter(), KiroAdapter(), AntigravityAdapter(), GeminiAdapter(), CodexAdapter())}
+ADAPTERS = {
+    a.name: a
+    for a in (ClaudeAdapter(), CoworkAdapter(), KiroAdapter(), AntigravityAdapter(), GeminiAdapter(), CodexAdapter())
+}
 
 
 def selected(names):

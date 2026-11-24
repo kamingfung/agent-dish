@@ -4,6 +4,7 @@ Written from the chat-recording format (a JSON document per session with a `mess
 carry `tokens` and `toolCalls`) and checked only against a synthetic fixture: no Gemini CLI data was
 available when this was written. If your sessions do not appear or look wrong, please open an issue with a
 redacted sample. The folder a session ran in is not recorded, only a hash of it, so its project shows as '?'."""
+
 import json
 import os
 
@@ -53,6 +54,14 @@ class GeminiAdapter(Adapter):
                 paths += [p for p in (args.get("paths") or []) if isinstance(p, str)]
                 kind = "w" if name in WRITE_TOOLS else "r" if name in READ_TOOLS else None
                 events += [(kind, p, t) for p in paths if kind]
-            add_msg(res, m.get("id") or f"{sid}:{i}", sid, t, (tk.get("output") or 0) + (tk.get("thoughts") or 0),
-                    tk.get("input") or 0, tk.get("cached") or 0, events)
+            add_msg(
+                res,
+                m.get("id") or f"{sid}:{i}",
+                sid,
+                t,
+                (tk.get("output") or 0) + (tk.get("thoughts") or 0),
+                tk.get("input") or 0,
+                tk.get("cached") or 0,
+                events,
+            )
         return res

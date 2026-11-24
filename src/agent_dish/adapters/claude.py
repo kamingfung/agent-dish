@@ -1,4 +1,5 @@
 """Claude Code: ~/.claude/projects/<project>/<session>.jsonl, sub-agents in <session>/subagents/*.jsonl."""
+
 import os
 import re
 
@@ -65,8 +66,15 @@ class ClaudeAdapter(Adapter):
                     events.append(("r", p, t))
                 elif b["name"] == MSG_TOOL and inp.get("session_id"):
                     res["edges"].append((sid, inp["session_id"], t))
-            add_msg(res, m.get("id") or d.get("uuid"), sid, t, u.get("output_tokens") or 0,
-                    (u.get("input_tokens") or 0) + (u.get("cache_creation_input_tokens") or 0),
-                    u.get("cache_read_input_tokens") or 0, events)
+            add_msg(
+                res,
+                m.get("id") or d.get("uuid"),
+                sid,
+                t,
+                u.get("output_tokens") or 0,
+                (u.get("input_tokens") or 0) + (u.get("cache_creation_input_tokens") or 0),
+                u.get("cache_read_input_tokens") or 0,
+                events,
+            )
         res["subs"] = [(sid, path, t) for sid, t in sub_first.items()]
         return res

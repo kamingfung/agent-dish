@@ -2,6 +2,7 @@
 
 Each PLANNER_RESPONSE step carries input/output/cache token counts and its tool calls. The folder a
 conversation ran in comes from cache/last_conversations.json."""
+
 import json
 import os
 
@@ -63,6 +64,14 @@ class AntigravityAdapter(Adapter):
                             events.append(("r", path_, t))
                     if "subagent" in name:
                         res["subs"].append((sid, f"{mid}:{name}", t))
-                add_msg(res, mid, sid, t, d.get("output_tokens") or 0, d.get("input_tokens") or 0,
-                        d.get("cache_read_tokens") or 0, events)
+                add_msg(
+                    res,
+                    mid,
+                    sid,
+                    t,
+                    d.get("output_tokens") or 0,
+                    d.get("input_tokens") or 0,
+                    d.get("cache_read_tokens") or 0,
+                    events,
+                )
         return res

@@ -12,6 +12,7 @@ into a ParseResult: plain dicts and tuples, independent of any time window, so r
 
 Everything an adapter does not know is simply left out. Timestamps are epoch seconds.
 """
+
 import glob
 import json
 import os
@@ -61,12 +62,12 @@ def read_jsonl(path):
 
 
 class Adapter:
-    name = ""            # short id used on the command line and in graph.json
-    label = ""           # human name
-    version = 1          # bump when parse() output changes: invalidates the cache
+    name = ""  # short id used on the command line and in graph.json
+    label = ""  # human name
+    version = 1  # bump when parse() output changes: invalidates the cache
     experimental = False  # True = written from the format's docs, not yet checked against real data
     tokens_estimated = False  # True = the agent does not report tokens; counts are chars / 4
-    root_env = ""        # environment variable that overrides the transcript root
+    root_env = ""  # environment variable that overrides the transcript root
 
     def root(self):
         return os.environ.get(self.root_env) or self.default_root()
