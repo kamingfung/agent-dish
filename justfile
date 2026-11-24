@@ -53,11 +53,12 @@ check: hooks test secrets
 install-gitleaks:
     curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v{{ gitleaks_version }}/gitleaks_{{ gitleaks_version }}_linux_x64.tar.gz | sudo tar -xz -C /usr/local/bin gitleaks
 
-# build the wheel and sdist and validate them
+# build the wheel and sdist (validated) and the single-file agent-dish.pyz
 build:
-    rm -rf dist
+    rm -rf dist dist-zipapp
     uv build
-    uvx twine check dist/*
+    uvx twine check dist/*.whl dist/*.tar.gz
+    python3 scripts/make_zipapp.py dist-zipapp/agent-dish.pyz
 
 # release only if the tag matches the Python and npm versions, e.g. `just release-check v0.1.0`
 release-check tag:

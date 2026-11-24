@@ -27,3 +27,4 @@ npm/python/
 npm/LICENSE
 dist-npm/
 *.tgz
+dist-zipapp/

@@ -28,7 +28,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           awk -v t="${GITHUB_REF_NAME#v}" '$0 ~ "^## "t"( |$)"{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
-          gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --notes-file notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* dist-zipapp/agent-dish.pyz --title "$GITHUB_REF_NAME" --notes-file notes.md
   pypi:
     needs: build
     if: vars.PUBLISH_TO_PYPI == 'true' # off until you set this repository variable

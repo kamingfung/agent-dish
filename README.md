@@ -16,14 +16,25 @@ It reads the transcripts your agents already write on your machine. Nothing is u
 
 ## Cultivate
 
-```bash
-pipx install git+https://github.com/kamingfung/agent-dish    # or: pip install git+https://github.com/kamingfung/agent-dish
+Python 3.9 or newer is all it needs: agent-dish has no dependencies, so there is no installer to pick. Choose any one:
 
-agent-dish demo --open       # try it first, on invented sessions
-agent-dish serve --open      # your own dish, live, last 30 days
+```bash
+# 1. Nothing to install: run it straight from GitHub with uv
+uvx --from git+https://github.com/kamingfung/agent-dish agent-dish demo --open      # invented sessions, try it first
+uvx --from git+https://github.com/kamingfung/agent-dish agent-dish serve --open    # your own dish, live
+
+# 2. pip, in a virtual environment (recent Pythons refuse a global pip install)
+python3 -m venv ~/.venvs/agent-dish
+~/.venvs/agent-dish/bin/pip install git+https://github.com/kamingfung/agent-dish
+~/.venvs/agent-dish/bin/agent-dish serve --open
+
+# 3. No installer at all: clone it and run it with the python3 you already have
+git clone https://github.com/kamingfung/agent-dish && cd agent-dish
+PYTHONPATH=src python3 -m agent_dish.cli serve --open
 ```
 
-Python 3.9 or newer, standard library only.
+`pipx install git+https://github.com/kamingfung/agent-dish` and `uv tool install git+https://github.com/kamingfung/agent-dish`
+also work, and give you a plain `agent-dish` command. Everywhere below, `agent-dish` means whichever of these you chose.
 
 ## What you get
 
@@ -118,7 +129,7 @@ See [CONTRIBUTING.md](https://github.com/kamingfung/agent-dish/blob/main/CONTRIB
 ## Let's cultivate your AI agents
 
 ```bash
-pipx install git+https://github.com/kamingfung/agent-dish && agent-dish serve --open
+uvx --from git+https://github.com/kamingfung/agent-dish agent-dish serve --open
 ```
 
 ## License
