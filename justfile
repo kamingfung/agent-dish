@@ -3,7 +3,8 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-gitleaks_version := "8.30.0"
+# read from .pre-commit-config.yaml, so the CI binary and the commit hook are always the same gitleaks (Dependabot updates that file)
+gitleaks_version := `sed -n '/gitleaks\/gitleaks/{n;s/.*rev: v//p;}' .pre-commit-config.yaml`
 
 # list the recipes
 default:
