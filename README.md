@@ -12,7 +12,7 @@ Everything runs on your machine. Nothing is uploaded.
 ## Install
 
 ```bash
-pipx install git+https://github.com/OWNER/session-cells     # or: pip install git+https://github.com/OWNER/session-cells
+pipx install git+https://github.com/kamingfung/session-cells     # or: pip install git+https://github.com/kamingfung/session-cells
 ```
 
 Python 3.9 or newer, standard library only.
