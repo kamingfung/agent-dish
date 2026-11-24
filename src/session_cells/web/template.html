@@ -1,0 +1,283 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Session cells</title>
+<style>
+  :root { --ink:#1f2933; --mute:#7b8794; --line:#d9dee3; --acc:#e0832f; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:13px/1.4 -apple-system, system-ui, sans-serif; color:var(--ink); display:grid; grid-template-rows:auto 1fr; height:100vh; }
+  header { padding:8px 16px; border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:baseline; flex-wrap:wrap; }
+  h1 { font-size:15px; margin:0; } .mute { color:var(--mute); }
+  button, select { font:inherit; border:1px solid var(--line); background:#fff; padding:3px 10px; cursor:pointer; border-radius:3px; }
+  #main { position:relative; min-height:0; min-width:0; background:#eef1f4; }
+  canvas { display:block; } #dish { width:100%; height:100%; }
+  #legend { position:absolute; right:14px; top:12px; width:272px; background:#fffffff2; border:1px solid var(--line); border-radius:6px; padding:8px 10px 6px; font-size:11.5px; line-height:1.35; z-index:4; box-shadow:0 2px 10px #0001; max-height:calc(100% - 90px); overflow:auto; }
+  #legend .hd { display:flex; justify-content:space-between; align-items:center; font-weight:600; }
+  #legend button { border:0; background:none; color:#2563eb; padding:0; font-size:11px; }
+  #legend .lr { display:flex; gap:8px; align-items:center; margin:5px 0; } #legend .lr svg { flex:0 0 34px; }
+  #legend .lr b { display:block; } #legend .sub { color:var(--mute); }
+  #sizeScale { display:flex; align-items:flex-end; gap:12px; margin:6px 0 2px 2px; } #sizeScale div { text-align:center; font-size:10px; color:var(--mute); }
+  #sizeScale i { display:block; margin:0 auto 2px; border-radius:50%; background:#6a4fd6; }
+  #card { position:absolute; left:14px; top:12px; width:300px; background:#fffffff5; border:1px solid var(--line); border-radius:6px; padding:10px 12px; z-index:4; box-shadow:0 2px 10px #0001; display:none; max-height:calc(100% - 90px); overflow:auto; }
+  #card h2 { font-size:14px; margin:0 0 2px; padding-right:18px; word-break:break-word; } #card ul { margin:4px 0 8px; padding-left:16px; }
+  #card .x { position:absolute; right:8px; top:6px; border:0; background:none; font-size:16px; color:var(--mute); padding:0 4px; }
+  #card .tag { display:inline-block; font-size:10.5px; padding:0 6px; border-radius:8px; background:#eef1f4; color:#52606d; margin-right:4px; }
+  a.s { color:#2563eb; cursor:pointer; text-decoration:underline; }
+  #tip { position:absolute; pointer-events:none; background:#fff; border:1px solid var(--line); border-radius:4px; padding:6px 8px; box-shadow:0 2px 8px #0002; display:none; max-width:340px; white-space:pre; z-index:5; }
+  #ctl { position:absolute; left:0; right:0; bottom:0; padding:8px 14px; background:#ffffffee; border-top:1px solid var(--line); display:flex; gap:12px; align-items:center; }
+  #ctl input[type=range] { flex:1; }
+</style>
+<header>
+  <h1>Session cells</h1>
+  <span class="mute" id="stats"></span>
+  <label class="mute">from <input type="date" id="since"></label>
+  <span class="mute" id="live"></span>
+  <button id="legToggle" style="margin-left:auto" title="show or hide the legend">Legend</button>
+</header>
+<div id="main">
+  <canvas id="dish"></canvas>
+  <div id="card"><button class="x" id="cardX">&times;</button><div id="cardBody"></div></div>
+  <div id="legend"><div class="hd"><span>How to read the dish</span><button id="legBtn">hide</button></div><div id="legBody">
+    <div class="sub">Each dot is one agent session (Claude Code, Kiro, Antigravity, Codex). The dish replays from <span id="legDays"></span>, then keeps growing live when served. Colony titles follow what each colony has been about in the last few days.</div>
+    <div class="lr"><div style="flex:1"><b>Size = output tokens so far</b><span class="sub">The dot grows as the session produces tokens (log scale):</span><div id="sizeScale"></div></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="7" fill="#6a4fd6"/><circle cx="17" cy="15" r="11" fill="none" stroke="#6a4fd6" stroke-width="1.5"/></svg><div><b>Ring = working now</b><span class="sub">Produced output in the last 10 minutes.</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="7" fill="#6a4fd6" opacity=".3"/></svg><div><b>Faded = dormant</b><span class="sub">Over an hour since its last message.</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="6" fill="#6a4fd6"/><g fill="#111"><circle cx="17" cy="4" r="1.6"/><circle cx="27" cy="12" r="1.6"/><circle cx="24" cy="25" r="1.6"/><circle cx="8" cy="23" r="1.6"/></g></svg><div><b>Black dots = sub-agents</b><span class="sub">Helpers it spawned (cell division).</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="6" cy="15" r="4" fill="#2faa55"/><line x1="10" y1="15" x2="24" y2="15" stroke="#e0832f" stroke-width="2"/><circle cx="27" cy="15" r="4" fill="#6a4fd6"/><circle cx="27" cy="15" r="7.5" fill="none" stroke="#e0832f" stroke-width="1.5"/></svg><div><b>Orange line = hand-off</b><span class="sub">A later session read or edited a file this one wrote. The ring marks the receiver.</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><defs><radialGradient id="lg"><stop offset="0" stop-color="#9ad0a8" stop-opacity=".8"/><stop offset="1" stop-color="#9ad0a8" stop-opacity="0"/></radialGradient></defs><circle cx="17" cy="15" r="14" fill="url(#lg)"/></svg><div><b>Middle = most recent</b><span class="sub">The colony with the newest activity sits in the centre and older colonies ring outward. Inside a colony the newest cell is at its centre and older ones spiral out. Unthemed sessions form the outer band.</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="3" fill="#6a4fd6"/><circle cx="24" cy="11" r="3" fill="#6a4fd6" opacity=".7"/><circle cx="22" cy="21" r="3" fill="#6a4fd6" opacity=".5"/><circle cx="10" cy="20" r="3" fill="#6a4fd6" opacity=".35"/></svg><div><b>Colony = theme</b><span class="sub">Sessions whose prompts and files share a recurring phrase form a colony, named by that phrase. The rest are unthemed (grey-blue).</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><defs><radialGradient id="h1"><stop offset="0" stop-color="#e0527a" stop-opacity=".85"/><stop offset="1" stop-color="#e0527a" stop-opacity="0"/></radialGradient><radialGradient id="h2"><stop offset="0" stop-color="#3aa6d8" stop-opacity=".85"/><stop offset="1" stop-color="#3aa6d8" stop-opacity="0"/></radialGradient></defs><circle cx="11" cy="15" r="12" fill="url(#h1)"/><circle cx="22" cy="15" r="12" fill="url(#h2)"/></svg><div><b>Floor glow = heat map</b><span class="sub">Each cell tints the dish around it in its colour. Glows blend where colonies meet and run stronger where more is happening.</span></div></div>
+  </div></div>
+  <div id="tip"></div>
+  <div id="ctl"><button id="play">Pause</button><input type="range" id="scrub" min="0" max="1000" value="0">
+    <button id="shufBtn" title="new random colours">Shuffle colours</button><button id="nowBtn" title="jump to the newest activity and follow it">Now</button>
+    <select id="speed"><option value="0.5">slow</option><option value="1" selected>normal</option><option value="3">fast</option></select>
+    <label class="mute" title="sessions with no recurring phrase"><input type="checkbox" id="unth"> unthemed</label><span id="clock" class="mute" style="min-width:150px"></span><span id="tot" class="mute" style="min-width:170px"></span></div>
+</div>
+<script>
+let DATA = /*DATA*/null;
+let N, REAL, MAXOUT, T0, T1;
+const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'k' : String(Math.round(n));
+const base = p => p.split('/').pop();
+const hue = s => { let h = 0; for (const c of s) h = (h*31 + c.charCodeAt(0)) % 360; return h; };
+const date = t => t ? new Date(t*1000).toISOString().slice(0,10) : '';
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const $ = id => document.getElementById(id);
+const tip = $('tip');
+let sel = null, frame = 0, drag = null, alpha = 1;
+let showUnthemed = (() => { try { return localStorage.getItem('session-cells-unthemed') === '1'; } catch { return false; } })();
+const nameAt = (key, t) => { const a = (DATA.colonyNames || {})[key]; if (!a) return key; let name = key; for (const [d, nm] of a) { if (d <= t) name = nm; else break; } return name; };
+
+function index() {
+  N = new Map(DATA.nodes.map(n => [n.id, n])); REAL = DATA.nodes;
+  MAXOUT = Math.max(1, ...REAL.map(n => n.out));
+  T0 = Math.min(...REAL.filter(n => n.start).map(n => n.start)); T1 = Math.max(...REAL.map(n => n.end));
+  const by = {}; for (const n of REAL) by[n.agent] = (by[n.agent] || 0) + 1;
+  $('stats').textContent = `from ${date(DATA.since)} · ${REAL.length} sessions (${Object.entries(by).map(([a,c]) => c+' '+a).join(', ')}) · ${fmt(REAL.reduce((a,n)=>a+n.out,0))} output tokens`;
+}
+function fit(c, w, h) { const k = devicePixelRatio||1; c.style.width = w+'px'; c.style.height = h+'px'; c.width = w*k; c.height = h*k; c.getContext('2d').setTransform(k,0,0,k,0,0); return [w,h]; }
+function fitTo(c) { const r = c.parentElement.getBoundingClientRect(); return fit(c, r.width, r.height); }
+
+function forces(ns, es, pull, k) {
+  const n = ns.length;
+  for (let i = 0; i < n; i++) for (let j = i+1; j < n; j++) {
+    const a = ns[i], b = ns[j]; let dx = a.x-b.x, dy = a.y-b.y; const d2 = dx*dx+dy*dy || 1, d = Math.sqrt(d2), f = (pull ? 900 : 1800)/d2;
+    dx/=d; dy/=d; a.vx += dx*f; a.vy += dy*f; b.vx -= dx*f; b.vy -= dy*f;
+  }
+  for (const {s,t,e} of es) {
+    let dx = t.x-s.x, dy = t.y-s.y; const d = Math.sqrt(dx*dx+dy*dy) || 1, f = (d - 70) * 0.02 * Math.min(2, 1+Math.log2(e.n)/3);
+    dx/=d; dy/=d; s.vx += dx*f; s.vy += dy*f; t.vx -= dx*f; t.vy -= dy*f;
+  }
+  for (const p of ns) {
+    const c = pull ? pull(p) : { x:0, y:0 }; const kk = k ?? 0.004; p.vx += (c.x-p.x)*kk; p.vy += (c.y-p.y)*kk;
+    if (p !== drag) { p.x += p.vx*alpha; p.y += p.vy*alpha; } p.vx *= 0.6; p.vy *= 0.6;
+  }
+  alpha = Math.max(0.05, alpha*0.995);
+}
+function pickIn(canvas, list, r0, ev, cw, ch) {
+  const r = canvas.getBoundingClientRect(), x = ev.clientX-r.left-cw/2, y = ev.clientY-r.top-ch/2; let best = null, bd = 1e9;
+  for (const p of list) { const d = Math.hypot(p.x-x, p.y-y); if (d < Math.max(8, r0(p)+3) && d < bd) { best = p; bd = d; } } return best;
+}
+function showTip(ev, text) { const r = $('main').getBoundingClientRect(); tip.style.display = 'block'; tip.style.left = ev.clientX-r.left+14+'px'; tip.style.top = ev.clientY-r.top+14+'px'; tip.textContent = text; }
+const cumAt = (n, t) => { const c = n.curve; if (!c.length || t < c[0][0]) return 0; if (t >= c[c.length-1][0]) return c[c.length-1][1];
+  let lo = 0, hi = c.length-1; while (hi-lo > 1) { const m = (lo+hi)>>1; c[m][0] <= t ? lo = m : hi = m; }
+  const f = (t-c[lo][0])/Math.max(1, c[hi][0]-c[lo][0]); return c[lo][1] + f*(c[hi][1]-c[lo][1]); };
+
+const nodeTip = n => `${n.label}\n${n.agent} · ${n.project}${n.branch ? ' · '+n.branch : ''}${n.theme ? '\ntheme: '+n.theme : ''}\n${fmt(n.out)}${n.est ? ' (estimated)' : ''} output tokens · ${n.subs} sub-agents · ${n.kids} built on it\n${date(n.start)} → ${date(n.end)}`;
+
+// ================= 4. PETRI DISH (time-lapse / live) =================
+const dc = $('dish'), dx = dc.getContext('2d'); let DW = 0, DH = 0, dn = [], de = [], centers = new Map(), now = 0, playing = true, lastF = 0, atEnd = false;
+const dishR = () => Math.max(100, Math.min(DW, DH-70)/2 - 14);
+const lastActive = n => Math.max(lastGrowth(n), n.start);  // newest thing this cell did, as of the dish clock
+let rankOf = new Map();  // cell id -> 0 = newest in its colony
+function rebuildDish() {
+  const live = REAL.filter(n => n.out > 0 && (showUnthemed || n.theme !== 'unthemed')), counts = new Map(); for (const n of live) counts.set(n.theme, (counts.get(n.theme) || 0) + 1);
+  const maxC = Math.max(1, ...[...counts].filter(([k]) => k !== 'unthemed').map(([, v]) => v)), prev = centers; centers = new Map();
+  for (const [name, c] of counts) { const o = prev.get(name);  // keep positions across live updates so colonies do not jump
+    centers.set(name, { x:o ? o.x : 0, y:o ? o.y : 0, cur:o?.cur, prev:o?.prev, chg:o?.chg, tx:0, ty:0, last:0, r:dishR()*(0.08 + 0.22*Math.sqrt(c/maxC)), count:c, name, seed:hue(name)/57 }); }
+  const old = new Map(dn.map(p => [p.d.id, p]));
+  dn = live.map(n => Object.assign(old.get(n.id) || { x:0, y:0, vx:0, vy:0, fresh:true }, { d:n }));
+  retarget(true);
+  for (const p of dn) if (p.fresh) { const q = cellTarget(p); p.x = q.x + Math.random()*16-8; p.y = q.y + Math.random()*16-8; delete p.fresh; }
+  const idx = new Map(dn.map(p => [p.d.id, p])); de = DATA.edges.filter(e => idx.has(e.a) && idx.has(e.b)).map(e => ({ s:idx.get(e.a), t:idx.get(e.b), e }));
+}
+// Where things sit says how recent they are. The colony with the newest activity (as of the dish clock) takes the
+// middle, older ones ring outward, and "unthemed" is the outer band. Inside a colony the newest cell is at its
+// centre and older ones spiral outward, like tree rings.
+function retarget(snap) {
+  const R = dishR(), by = new Map();
+  for (const p of dn) { const c = centers.get(p.d.theme); if (!by.has(c)) by.set(c, []); by.get(c).push(p); }
+  for (const [c, ps] of by) {
+    const started = ps.filter(p => p.d.start <= now).sort((a, b) => lastActive(b.d) - lastActive(a.d));
+    c.last = started.length ? lastActive(started[0].d) : 0; c.live = started.length;   // how many of its cells exist yet at the dish clock
+    started.forEach((p, i) => rankOf.set(p.d.id, i)); ps.filter(p => p.d.start > now).forEach(p => rankOf.set(p.d.id, ps.length));
+  }
+  const themed = [...centers.values()].filter(c => c.name !== 'unthemed' && c.live > 0).sort((a, b) => b.last - a.last || b.count - a.count), ring1 = 5;
+  for (const c of centers.values()) if (c.name !== 'unthemed' && !c.live) { c.tx = Math.cos(c.seed*9)*R*0.8; c.ty = Math.sin(c.seed*9)*R*0.8; }  // not born yet: parked, unseen
+  themed.forEach((c, i) => {
+    if (i === 0) { c.tx = 0; c.ty = 0; return; }
+    const inner = i <= ring1, k = inner ? i-1 : i-1-ring1, m = inner ? Math.min(ring1, themed.length-1) : themed.length-1-ring1, a = k/Math.max(1, m)*6.283 - 1.57 + (inner ? 0 : 0.3);
+    const rr = R*(inner ? (showUnthemed ? 0.32 : 0.42) : (showUnthemed ? 0.62 : 0.78)); c.tx = Math.cos(a)*rr; c.ty = Math.sin(a)*rr;
+  });
+  if (snap) for (const c of centers.values()) { c.x = c.tx; c.y = c.ty; }
+}
+function cellTarget(p) {
+  const c = centers.get(p.d.theme), rk = rankOf.get(p.d.id) ?? 0, R = dishR();
+  if (c.name === 'unthemed') { const d = Math.hypot(p.x, p.y) || 1, rr = R*(0.72 + 0.17*rk/Math.max(1, c.count)); return { x:p.x/d*rr, y:p.y/d*rr }; }
+  const a = rk*2.39996 + c.seed, dd = 12*Math.sqrt(rk + 0.6); return { x:c.x + Math.cos(a)*dd, y:c.y + Math.sin(a)*dd };
+}
+// Heat map: every visible cell splats a gaussian glow in its colour; where cells cluster the glows add up
+// and blend, so the floor takes the colour of its neighbourhood and is stronger where there is more going on.
+let heatC = null, heatX = null, heatImg = null;
+function heatMap(R) {
+  const gs = 10, gw = Math.ceil(2*R/gs) + 1, sig = 3.6, ext = Math.ceil(sig*2.6);
+  if (!heatC || heatC.width !== gw) { heatC = document.createElement('canvas'); heatC.width = heatC.height = gw; heatX = heatC.getContext('2d'); heatImg = heatX.createImageData(gw, gw); }
+  const D = new Float32Array(gw*gw), Rr = new Float32Array(gw*gw), G = new Float32Array(gw*gw), B = new Float32Array(gw*gw);
+  for (const p of dn) { const n = p.d; if (n.start > now) continue;
+    const w0 = (radiusAt(n) + 1.5) * (now <= n.end + 3600 ? 1 : 0.35), [cr, cg, cb] = tcol(n.theme).rgb, gx = (p.x + R)/gs, gy = (p.y + R)/gs;
+    for (let j = Math.max(0, Math.floor(gy) - ext); j <= Math.min(gw-1, Math.floor(gy) + ext); j++) for (let i = Math.max(0, Math.floor(gx) - ext); i <= Math.min(gw-1, Math.floor(gx) + ext); i++) {
+      const w = w0*Math.exp(-((i-gx)**2 + (j-gy)**2)/(2*sig*sig)), k = j*gw + i; D[k] += w; Rr[k] += w*cr; G[k] += w*cg; B[k] += w*cb; } }
+  const px = heatImg.data;
+  for (let k = 0; k < gw*gw; k++) { const d = D[k]; px[4*k] = Rr[k]/(d || 1); px[4*k+1] = G[k]/(d || 1); px[4*k+2] = B[k]/(d || 1); px[4*k+3] = 255*Math.min(0.8, 1 - Math.exp(-d*0.05)); }
+  heatX.putImageData(heatImg, 0, 0); dx.imageSmoothingEnabled = true; dx.imageSmoothingQuality = 'high'; dx.drawImage(heatC, -R - gs/2, -R - gs/2, gw*gs, gw*gs);
+}
+function drawDish() {
+  dx.clearRect(0,0,DW,DH); dx.save(); dx.translate(DW/2, DH/2 - 28); const R = dishR();
+  // glass dish: soft shadow, rim, agar floor
+  dx.save(); dx.shadowColor = '#0003'; dx.shadowBlur = 24; dx.shadowOffsetY = 8; dx.beginPath(); dx.arc(0, 0, R+8, 0, 7); dx.fillStyle = '#fff'; dx.fill(); dx.restore();
+  const agar = dx.createRadialGradient(-R*0.25, -R*0.3, R*0.1, 0, 0, R);
+  agar.addColorStop(0, '#f6f4e4'); agar.addColorStop(1, '#e4e8d2');
+  dx.beginPath(); dx.arc(0, 0, R, 0, 7); dx.fillStyle = agar; dx.fill();
+  dx.lineWidth = 7; dx.strokeStyle = '#dfe6ea'; dx.stroke();
+  dx.lineWidth = 1.5; dx.strokeStyle = '#b9c4cb'; dx.beginPath(); dx.arc(0, 0, R+3.5, 0, 7); dx.stroke(); dx.beginPath(); dx.arc(0, 0, R-3.5, 0, 7); dx.stroke();
+  dx.beginPath(); dx.arc(0, 0, R-10, 3.5, 4.5); dx.lineWidth = 3; dx.strokeStyle = '#ffffffcc'; dx.lineCap = 'round'; dx.stroke(); // glass glint
+  dx.beginPath(); dx.arc(0, 0, R-4, 0, 7); dx.clip();
+  heatMap(R);
+  const span = 1800; // seconds a pulse lasts in sim time
+  for (const {s,t,e} of de) if (e.t <= now) { const age = now-e.t, hot = age < span*8;
+    dx.beginPath(); dx.moveTo(s.x,s.y); dx.lineTo(t.x,t.y); dx.strokeStyle = '#e0832f'; dx.globalAlpha = hot ? 0.9 : 0.25; dx.lineWidth = hot ? 2 : 1; dx.stroke();
+    if (hot) { dx.globalAlpha = 1-age/(span*8); dx.beginPath(); dx.arc(t.x, t.y, radiusAt(t.d)+4+age/span*3, 0, 7); dx.stroke(); } }
+  dx.globalAlpha = 1;
+  for (const p of dn) { const n = p.d; if (n.start > now) continue;
+    const r = radiusAt(n), alive = now <= n.end + 3600, c = dishColor(n);
+    dx.globalAlpha = alive ? 1 : 0.35; dx.beginPath(); dx.arc(p.x, p.y, r, 0, 7); dx.fillStyle = c; dx.fill();
+    if (alive && now - lastGrowth(n) < 600) { dx.strokeStyle = c; dx.lineWidth = 1; dx.beginPath(); dx.arc(p.x, p.y, r+3, 0, 7); dx.stroke(); }
+    let k = 0; for (const t of n.divs) if (t <= now) { const a = (k++ * 2.4) + p.x, rr = r + 4 + (now-t < 3600 ? 4 : 0); // a daughter cell budding off
+      dx.beginPath(); dx.arc(p.x+Math.cos(a)*rr, p.y+Math.sin(a)*rr, 1.8, 0, 7); dx.fillStyle = '#111'; dx.fill(); }
+    if (n.id === sel) { dx.globalAlpha = 1; dx.lineWidth = 2.5; dx.strokeStyle = '#111'; dx.beginPath(); dx.arc(p.x, p.y, r+2, 0, 7); dx.stroke(); } }
+  dx.globalAlpha = 1; dx.font = '600 11px system-ui'; dx.textAlign = 'center'; dx.lineJoin = 'round';
+  const clock = performance.now();
+  for (const c of centers.values()) {
+    if (!c.live) continue;   // a colony with no cells yet has no title yet
+    // The title is what the colony has been about lately, so it changes as the work does: crossfade old to new.
+    const want = c.name === 'unthemed' ? 'unthemed (no recurring phrase)' : nameAt(c.name, now);
+    if (c.cur === undefined) { c.cur = want; c.prev = ''; c.chg = -1e9; } else if (want !== c.cur) { c.prev = c.cur; c.cur = want; c.chg = clock; }
+    const k = Math.min(1, (clock - c.chg)/900), vr = 11*Math.sqrt(c.live) + 16, ty = c.name === 'unthemed' ? R - 30 : c.y > R*0.5 ? c.y - vr - 6 : c.y + vr + 12, edge = Math.sqrt(Math.max(0, (R-8)**2 - ty*ty));
+    let lx = c.x;
+    for (const [text, alpha] of [[c.prev, 1-k], [c.cur, k]]) { if (!text || alpha < 0.02) continue;
+      const name = text.length > 28 ? text.slice(0, 27)+'…' : text, half = dx.measureText(name).width/2 + 6;
+      lx = c.name === 'unthemed' ? 0 : Math.max(-edge + half, Math.min(edge - half, c.x));
+      dx.globalAlpha = alpha; dx.lineWidth = 4; dx.strokeStyle = '#f6f4e4e6'; dx.strokeText(name, lx, ty); dx.fillStyle = `hsl(${tcol(c.name).h} 55% 26%)`; dx.fillText(name, lx, ty); }
+    dx.globalAlpha = 1; dx.font = '10px system-ui'; dx.fillStyle = '#7b8794'; dx.fillText(`${c.live} ${c.live === 1 ? 'session' : 'sessions'}`, lx, ty+12); dx.font = '600 11px system-ui';
+  }
+  dx.restore(); dx.globalAlpha = 1;
+}
+function hslRgb(h, s, l) { s /= 100; l /= 100; const k = n => (n + h/30) % 12, a = s*Math.min(l, 1-l), f = n => l - a*Math.max(-1, Math.min(k(n)-3, 9-k(n), 1)); return [255*f(0), 255*f(8), 255*f(4)]; }
+let colorSeed = Math.random()*360, themeCol = new Map(), themeSeq = 0;
+function tcol(theme) {  // golden-angle hues keep neighbours apart; 'unthemed' stays a quiet grey-blue
+  let c = themeCol.get(theme); if (c) return c;
+  if (theme === 'unthemed') c = { h:215, s:14, l:60 };
+  else { const i = themeSeq++; c = { h:(colorSeed + i*137.508) % 360, s:64 + (i*7 % 3)*8, l:46 + (i*5 % 3)*5 }; }
+  c.rgb = hslRgb(c.h, c.s, c.l); c.css = `hsl(${c.h} ${c.s}% ${c.l}%)`; themeCol.set(theme, c); return c;
+}
+function shuffleColours() {  // new seed and a new random order of who gets which hue
+  const names = [...new Set(REAL.map(n => n.theme))].sort(() => Math.random() - 0.5); colorSeed = Math.random()*360; themeCol = new Map(); themeSeq = 0; names.forEach(tcol);
+}
+const dishColor = n => tcol(n.theme).css;
+const dotR = tokens => 2.5 + 2.7*Math.log10(1 + tokens/500); // log scale: 1k tokens ~ 3.6px wide growth shows on small sessions too
+const radiusAt = n => dotR(cumAt(n, now));
+const lastGrowth = n => { let l = 0; for (const p of n.curve) if (p[0] <= now) l = p[0]; return l; };
+dc.onclick = ev => { const p = pickIn(dc, dn.filter(q => q.d.start <= now), q => radiusAt(q.d), { clientX:ev.clientX, clientY:ev.clientY+28 }, DW, DH); if (p) select(p.d.id); };
+dc.onmousemove = ev => { const p = pickIn(dc, dn.filter(q => q.d.start <= now), q => radiusAt(q.d), { clientX:ev.clientX, clientY:ev.clientY+28 }, DW, DH);
+  dc.style.cursor = p ? 'pointer' : 'default'; p ? showTip(ev, nodeTip(p.d) + `\nat this moment: ${fmt(cumAt(p.d, now))} of ${fmt(p.d.out)} tokens`) : tip.style.display = 'none'; };
+$('play').onclick = () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; };
+$('shufBtn').onclick = () => { shuffleColours(); };
+$('nowBtn').onclick = () => { now = T1; playing = true; $('play').textContent = 'Pause'; };
+$('scrub').oninput = ev => { now = T0 + ev.target.value/1000*(T1-T0); playing = false; $('play').textContent = 'Play'; };
+
+
+// ================= detail card =================
+function select(id) {
+  const n = N.get(id); sel = n ? id : null; if (!n) { $('card').style.display = 'none'; return; }
+  const link = i => `<a class="s" data-id="${i}">${esc(N.get(i)?.label ?? i)}</a>`;
+  const out = DATA.edges.filter(e => e.a === id), inn = DATA.edges.filter(e => e.b === id);
+  const files = e => e.paths.map(p => esc(base(p))).join(', ');
+  $('cardBody').innerHTML = `<h2>${esc(n.label)}</h2><div><span class="tag">${esc(n.agent)}</span><span class="tag">${esc(n.theme)}</span></div>
+    <div class="mute">${esc(n.project)}${n.branch ? ' · '+esc(n.branch) : ''} · ${date(n.start)} → ${date(n.end)}</div>
+    <div>${fmt(n.out)} output${n.est ? ' (estimated)' : ''} · ${fmt(n.inn)} input · ${fmt(n.cache)} cached · ${n.subs} sub-agents</div>
+    <p><b>Others built on its work</b> (${out.length})</p><ul>${out.map(e => `<li>${link(e.b)}: ${files(e)}</li>`).join('') || '<li class="mute">none</li>'}</ul>
+    <p><b>It built on</b> (${inn.length})</p><ul>${inn.map(e => `<li>${link(e.a)}: ${files(e)}</li>`).join('') || '<li class="mute">none</li>'}</ul>`;
+  $('card').style.display = 'block';
+}
+$('cardBody').onclick = ev => { const id = ev.target.dataset?.id; if (id) select(id); };
+$('cardX').onclick = () => select(null);
+
+// ================= legend =================
+function setDays() {
+  $('legDays').textContent = date(DATA.since); const s = $('since'); s.value = date(DATA.since); s.max = date(Date.now()/1000);
+  if (!location.protocol.startsWith('http')) s.min = date(DATA.since);   // a static snapshot cannot look further back than it was built
+}
+$('since').onchange = async ev => {  // served: rebuild the window from that date; snapshot: just start the replay there
+  const v = ev.target.value; if (!v) return;
+  if (location.protocol.startsWith('http')) { try { load(await (await fetch('/graph.json?since=' + v, { cache:'no-store' })).json(), true); setDays(); } catch {} }
+  else now = Math.max(T0, Date.parse(v + 'T00:00:00Z')/1000);
+  playing = true; $('play').textContent = 'Pause';
+};
+$('sizeScale').innerHTML = [[1e3,'1k'],[1e4,'10k'],[1e5,'100k'],[1e6,'1M']].map(([v,l]) => `<div><i style="width:${2*dotR(v)}px;height:${2*dotR(v)}px"></i>${l}</div>`).join('');
+function showLegend(on) { $('legend').style.display = on ? '' : 'none'; $('legToggle').style.background = on ? '#e8edf2' : '#fff'; try { localStorage.setItem('session-cells-legend', on ? '1' : '0'); } catch {} }
+$('legBtn').onclick = () => showLegend(false);   // the panel's own "hide"
+$('legToggle').onclick = () => showLegend($('legend').style.display === 'none');
+showLegend((() => { try { return localStorage.getItem('session-cells-legend') !== '0'; } catch { return true; } })());
+
+// ================= wiring =================
+$('unth').checked = showUnthemed;
+$('unth').onchange = ev => { showUnthemed = ev.target.checked; try { localStorage.setItem('session-cells-unthemed', showUnthemed ? '1' : '0'); } catch {} rebuildDish(); };
+function layout() { [DW,DH] = fitTo(dc); }
+window.onresize = () => { layout(); rebuildDish(); };
+function load(data, first) { DATA = data; index(); rebuildDish(); if (first) now = T0; if (sel && N.get(sel)) select(sel); }
+load(DATA, true); layout(); rebuildDish(); setDays();
+(function loop(ts) {
+  const dt = Math.min(0.1, (ts-lastF)/1000 || 0); lastF = ts;
+  if (playing) { now += (T1-T0)/60 * dt * $('speed').value; if (now >= T1) { now = T1; atEnd = true; } else atEnd = false; $('scrub').value = (now-T0)/(T1-T0)*1000; }
+  if ((frame++ % 20) === 0) retarget(false);
+  for (const c of centers.values()) { c.x += (c.tx-c.x)*0.04; c.y += (c.ty-c.y)*0.04; }
+  forces(dn, de, cellTarget, 0.05);
+  for (const p of dn) { const lim = dishR() - 8 - radiusAt(p.d) - (p.d.divs.length ? 6 : 0), d = Math.hypot(p.x, p.y); if (d > lim) { p.x *= lim/d; p.y *= lim/d; p.vx *= -0.3; p.vy *= -0.3; } }
+  drawDish(); $('tot').textContent = fmt(dn.reduce((a, p) => a + cumAt(p.d, now), 0)) + ' output tokens so far'; $('clock').textContent = new Date(now*1000).toISOString().replace('T',' ').slice(0,16) + ' UTC';
+  requestAnimationFrame(loop);
+})(0);
+// live mode: when served by `session-cells serve`, re-read graph.json and keep growing
+if (location.protocol.startsWith('http')) {
+  $('live').textContent = '● live';
+  setInterval(async () => { try { const d = await (await fetch('/graph.json', { cache:'no-store' })).json(); if (d.generated !== DATA.generated) { const follow = now >= T1 - 1; load(d, false); if (follow) now = T1; $('live').textContent = '● live · updated ' + new Date().toLocaleTimeString(); setDays(); } } catch {} }, 10000);
+}
+</script>
