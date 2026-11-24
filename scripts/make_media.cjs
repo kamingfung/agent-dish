@@ -9,8 +9,8 @@ const fs = require("fs"),
 
 const [html, out] = [process.argv[2], process.argv[3] || "docs/media"];
 const url = "file://" + path.resolve(html) + "?seed=" + (process.env.SC_SEED || 40);
-const FRAMES = 72,
-  SIZE = { width: 1280, height: 800 };
+const FRAMES = 60,
+  SIZE = { width: 720, height: 720 }; // README examples are shown 720 wide: capture at that size so text is native
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 (async () => {
@@ -18,9 +18,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const browser = await chromium.launch(
     process.env.SC_CHANNEL === "" ? {} : { channel: process.env.SC_CHANNEL || "chrome" },
   );
-  const open = async (legend) => {
+  const open = async (legend, scale = 2, size = SIZE) => {
     // a fresh page: legend visible or hidden, paused at a fraction of the replay
-    const ctx = await browser.newContext({ viewport: SIZE });
+    const ctx = await browser.newContext({ viewport: size, deviceScaleFactor: scale });
     const page = await ctx.newPage();
     await page.addInitScript((l) => localStorage.setItem("agent-dish-legend", l), legend ? "1" : "0");
     await page.goto(url);
@@ -45,18 +45,20 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   });
   if (spot) {
     await page.mouse.click(spot.x, spot.y);
+    await page.mouse.move(360, 20); // off the dish, so no tooltip is left hanging in the shot
     await sleep(600);
     await page.screenshot({ path: path.join(out, "card.png") });
   }
   await page.context().close();
 
-  page = await open(true);
+  page = await open(true, 2, { width: 720, height: 960 }); // tall enough that the legend does not scroll
   await at(page, 0.74, 4200);
-  await page.screenshot({ path: path.join(out, "legend.png") });
+  await page.addStyleTag({ content: "#legend{background:#fff;box-shadow:none;border:0}#legBtn{display:none}" }); // a clean crop: opaque, no dish behind it
+  await page.locator("#legend").screenshot({ path: path.join(out, "legend.png") });
   await page.context().close();
 
   // the GIF: step the dish clock through the replay, letting the physics settle a little between frames
-  page = await open(false);
+  page = await open(false, 1);
   const frames = fs.mkdtempSync(path.join(require("os").tmpdir(), "sc-frames-"));
   for (let i = 0; i < FRAMES; i++) {
     await at(page, 0.04 + (0.94 * i) / (FRAMES - 1), i === 0 ? 2500 : 220);
@@ -72,7 +74,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     "-i",
     path.join(frames, "%03d.png"),
     "-vf",
-    "scale=840:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=160:stats_mode=full[p];[b][p]paletteuse=dither=sierra2_4a",
+    "scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=160:stats_mode=full[p];[b][p]paletteuse=dither=sierra2_4a",
     "-loop",
     "0",
     path.join(out, "dish.gif"),

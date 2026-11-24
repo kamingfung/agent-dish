@@ -3,7 +3,7 @@
 **Let's cultivate your AI agents.**
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/dish.gif" alt="A petri dish of colonies growing over a month of agent sessions" width="760">
+  <img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/dish.gif" alt="A petri dish of colonies growing over a month of agent sessions" width="720">
 </p>
 <p align="center"><sub>Invented demo data. Run <code>agent-dish demo --open</code> to play with it yourself.</sub></p>
 
@@ -27,15 +27,24 @@ Python 3.9 or newer, standard library only.
 
 ## What you get
 
-<table>
-<tr>
-<td width="50%"><img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/dish.png" alt="The dish: coloured colonies with titles, session counts and a heat-map floor"><br><sub><b>The dish.</b> Each colour is a colony. The glow underneath is a heat map of where work clusters. The colony with the newest activity sits in the middle.</sub></td>
-<td width="50%"><img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/card.png" alt="Clicking a cell shows what it built on and who built on it"><br><sub><b>One session.</b> Click a cell for its agent, tokens, and what it built on or what later built on it.</sub></td>
-</tr>
-<tr>
-<td colspan="2"><img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/legend.png" alt="The dish with its legend open"><br><sub><b>Built-in legend.</b> Size is tokens so far, a ring means working now, black dots are sub-agents, an orange line is a hand-off.</sub></td>
-</tr>
-</table>
+**The dish.** Each colour is a colony, titled by what it has been about lately. The glow underneath is a heat map of where
+work clusters, and the colony with the newest activity sits in the middle.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/dish.png" alt="The dish: coloured colonies with titles, session counts and a heat-map floor" width="720">
+</p>
+
+**One session.** Click a cell for its agent, tokens, what it built on and what later built on it.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/card.png" alt="Clicking a cell shows what it built on and who built on it" width="720">
+</p>
+
+**A built-in legend.** Size is tokens so far, a ring means working now, black dots are sub-agents, an orange line is a hand-off.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/legend.png" alt="The legend that explains every mark in the dish" width="300">
+</p>
 
 Use it to see:
 

@@ -23,8 +23,8 @@
   #card .tag { display:inline-block; font-size:10.5px; padding:0 6px; border-radius:8px; background:#eef1f4; color:#52606d; margin-right:4px; }
   a.s { color:#2563eb; cursor:pointer; text-decoration:underline; }
   #tip { position:absolute; pointer-events:none; background:#fff; border:1px solid var(--line); border-radius:4px; padding:6px 8px; box-shadow:0 2px 8px #0002; display:none; max-width:340px; white-space:pre; z-index:5; }
-  #ctl { position:absolute; left:0; right:0; bottom:0; padding:8px 14px; background:#ffffffee; border-top:1px solid var(--line); display:flex; gap:12px; align-items:center; }
-  #ctl input[type=range] { flex:1; }
+  #ctl { position:absolute; left:0; right:0; bottom:0; padding:8px 14px; background:#ffffffee; border-top:1px solid var(--line); display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+  #ctl input[type=range] { flex:1; min-width:140px; }
 </style>
 <header>
   <h1>Agent dish</h1>
@@ -220,6 +220,7 @@ const lastGrowth = n => { let l = 0; for (const p of n.curve) if (p[0] <= now) l
 dc.onclick = ev => { const p = pickIn(dc, dn.filter(q => q.d.start <= now), q => radiusAt(q.d), { clientX:ev.clientX, clientY:ev.clientY+28 }, DW, DH); if (p) select(p.d.id); };
 dc.onmousemove = ev => { const p = pickIn(dc, dn.filter(q => q.d.start <= now), q => radiusAt(q.d), { clientX:ev.clientX, clientY:ev.clientY+28 }, DW, DH);
   dc.style.cursor = p ? 'pointer' : 'default'; p ? showTip(ev, nodeTip(p.d) + `\nat this moment: ${fmt(cumAt(p.d, now))} of ${fmt(p.d.out)} tokens`) : tip.style.display = 'none'; };
+dc.onmouseleave = () => { tip.style.display = 'none'; };   // the tooltip must not outlive the pointer
 $('play').onclick = () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; };
 $('shufBtn').onclick = () => { shuffleColours(); };
 $('nowBtn').onclick = () => { now = T1; playing = true; $('play').textContent = 'Pause'; };
