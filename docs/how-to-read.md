@@ -22,6 +22,12 @@ Pick the start date with the **from** box in the header (a snapshot can only sta
 
 ## Controls
 
+- **from** sets where the play bar starts. The bar runs from that date to the newest activity, token counts start at zero on
+  that date, and only sessions active since then are shown. A served dish rebuilds its window from the date you pick (it
+  can look back as far as your transcripts go); a saved snapshot can only narrow what it was built with.
+- **Agents** chooses which AIs to include (Claude Code, Claude Cowork, Kiro, Antigravity, Gemini CLI, Codex), with the number
+  of sessions each has. Your choice is remembered. It only hides sessions in the page; `--agents` on the command line decides
+  what is read in the first place.
 - **Play / Pause**, the **scrubber** (drag to any moment), and **speed**. Normal plays 30 days in about a minute.
 - **Now** jumps to the newest activity and follows it. A served dish refreshes itself every 10 seconds.
 - Click a cell for its details: agent, project, branch, tokens, who built on it and what it built on.

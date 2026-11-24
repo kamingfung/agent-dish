@@ -39,3 +39,9 @@ def test_demo_renders_with_the_demo_banner():
     html = render(demo_graph(30, END, 7))
     assert json.loads(html.split("let DATA = ")[1].split(";\nlet N")[0])["demo"] is True
     assert "DEMO: invented sessions" in html
+
+
+def test_demo_describes_all_six_agents():
+    g = demo_graph(30, END, 7)
+    assert set(g["agentMeta"]) == set(AGENTS)
+    assert g["agentMeta"]["kiro"]["estimated"] and g["agentMeta"]["gemini"]["experimental"]

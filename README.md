@@ -94,6 +94,8 @@ agent-dish demo --open                  # invented sessions, nothing from your m
 The first run reads every transcript in the window (about 15 seconds for a thousand). After that only transcripts that
 changed are re-read, so live updates take about a second.
 
+In the page, **from** picks the start date (the play bar starts there) and **Agents** picks which AIs to include.
+
 How to read what you see: [docs/how-to-read.md](https://github.com/kamingfung/agent-dish/blob/main/docs/how-to-read.md), or press **Legend** in the page.
 
 ## What it can and cannot tell you

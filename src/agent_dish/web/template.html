@@ -17,6 +17,9 @@
   #legend .lr b { display:block; } #legend .sub { color:var(--mute); }
   #sizeScale { display:flex; align-items:flex-end; gap:12px; margin:6px 0 2px 2px; } #sizeScale div { text-align:center; font-size:10px; color:var(--mute); }
   #sizeScale i { display:block; margin:0 auto 2px; border-radius:50%; background:#6a4fd6; }
+  #agents { position:fixed; top:46px; right:14px; width:320px; background:#fff; border:1px solid var(--line); border-radius:6px; padding:10px 12px; z-index:7; box-shadow:0 4px 18px #0002; display:none; }
+  #agents h3 { margin:0 0 6px; font-size:13px; } #agents .agrow { display:grid; grid-template-columns:18px auto; gap:0 6px; padding:4px 0; cursor:pointer; }
+  #agents .agrow .mute { grid-column:2; font-size:11.5px; } #agents .links { margin-top:6px; font-size:12px; }
   #card { position:absolute; left:14px; top:12px; width:300px; background:#fffffff5; border:1px solid var(--line); border-radius:6px; padding:10px 12px; z-index:4; box-shadow:0 2px 10px #0001; display:none; max-height:calc(100% - 90px); overflow:auto; }
   #card h2 { font-size:14px; margin:0 0 2px; padding-right:18px; word-break:break-word; } #card ul { margin:4px 0 8px; padding-left:16px; }
   #card .x { position:absolute; right:8px; top:6px; border:0; background:none; font-size:16px; color:var(--mute); padding:0 4px; }
@@ -31,8 +34,10 @@
   <span class="mute" id="stats"></span>
   <label class="mute">from <input type="date" id="since"></label>
   <span class="mute" id="live"></span>
-  <button id="legToggle" style="margin-left:auto" title="show or hide the legend">Legend</button>
+  <button id="agBtn" style="margin-left:auto" title="choose which agents to include">Agents</button>
+  <button id="legToggle" title="show or hide the legend">Legend</button>
 </header>
+<div id="agents"><h3>Include these agents</h3><div id="agList"></div><div class="links"><a class="s" id="agAll">all</a> · <a class="s" id="agNone">none</a> <span class="mute">· hides sessions only; `--agents` decides what is read</span></div></div>
 <div id="main">
   <canvas id="dish"></canvas>
   <div id="card"><button class="x" id="cardX">&times;</button><div id="cardBody"></div></div>
@@ -55,7 +60,7 @@
 </div>
 <script>
 let DATA = /*DATA*/null;
-let N, REAL, MAXOUT, T0, T1;
+let N, REAL, MAXOUT, T0, T1, START, userStart = 0;   // START: the chosen from-date, the play bar's left end
 const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'k' : String(Math.round(n));
 const base = p => p.split('/').pop();
 const hue = s => { let h = 0; for (const c of s) h = (h*31 + c.charCodeAt(0)) % 360; return h; };
@@ -68,12 +73,23 @@ const QUERY = new URLSearchParams(location.search);   // ?seed=40 fixes the colo
 let showUnthemed = (() => { try { return localStorage.getItem('agent-dish-unthemed') === '1'; } catch { return false; } })();
 const nameAt = (key, t) => { const a = (DATA.colonyNames || {})[key]; if (!a) return key; let name = key; for (const [d, nm] of a) { if (d <= t) name = nm; else break; } return name; };
 
+const AGENT_NAMES = { claude: 'Claude Code', cowork: 'Claude Cowork', kiro: 'Kiro', antigravity: 'Antigravity', gemini: 'Gemini CLI', codex: 'Codex' };
+let disabledAgents = new Set((() => { try { return JSON.parse(localStorage.getItem('agent-dish-agents-off') || '[]'); } catch { return []; } })());
+const agentLabel = a => DATA.agentMeta?.[a]?.label || AGENT_NAMES[a] || a;
+const included = n => !disabledAgents.has(n.agent);
+
 function index() {
   N = new Map(DATA.nodes.map(n => [n.id, n])); REAL = DATA.nodes;
   MAXOUT = Math.max(1, ...REAL.map(n => n.out));
-  T0 = Math.min(...REAL.filter(n => n.start).map(n => n.start)); T1 = Math.max(...REAL.map(n => n.end));
-  const by = {}; for (const n of REAL) by[n.agent] = (by[n.agent] || 0) + 1;
-  $('stats').textContent = `from ${date(DATA.since)} · ${REAL.length} sessions (${Object.entries(by).map(([a,c]) => c+' '+a).join(', ')}) · ${fmt(REAL.reduce((a,n)=>a+n.out,0))} output tokens` + (DATA.demo ? ' · DEMO: invented sessions' : '');
+  T1 = Math.max(...REAL.map(n => n.end));
+  START = Math.min(Math.max(DATA.since, userStart), T1);   // the bar starts at the date you chose, not at the first session
+  T0 = START;
+  for (const n of REAL) n._base = START > DATA.since ? cumAt(n, START) : 0;   // tokens from before that date do not count
+  const inc = REAL.filter(n => included(n) && n.end >= START), by = {}; for (const n of inc) by[n.agent] = (by[n.agent] || 0) + 1;
+  const hidden = REAL.filter(n => !included(n) && n.end >= START).length, kinds = new Set(REAL.map(n => n.agent));
+  $('stats').textContent = `from ${date(START)} · ${inc.length} sessions${inc.length ? ` (${Object.entries(by).map(([a, c]) => c + ' ' + a).join(', ')})` : ''} · ${fmt(inc.reduce((a, n) => a + winOut(n), 0))} output tokens`
+    + (hidden ? ` · ${hidden} hidden` : '') + (DATA.demo ? ' · DEMO: invented sessions' : '');
+  $('agBtn').textContent = `Agents ${[...kinds].filter(a => !disabledAgents.has(a)).length}/${kinds.size}`;
 }
 function fit(c, w, h) { const k = devicePixelRatio||1; c.style.width = w+'px'; c.style.height = h+'px'; c.width = w*k; c.height = h*k; c.getContext('2d').setTransform(k,0,0,k,0,0); return [w,h]; }
 function fitTo(c) { const r = c.parentElement.getBoundingClientRect(); return fit(c, r.width, r.height); }
@@ -103,7 +119,7 @@ const cumAt = (n, t) => { const c = n.curve; if (!c.length || t < c[0][0]) retur
   let lo = 0, hi = c.length-1; while (hi-lo > 1) { const m = (lo+hi)>>1; c[m][0] <= t ? lo = m : hi = m; }
   const f = (t-c[lo][0])/Math.max(1, c[hi][0]-c[lo][0]); return c[lo][1] + f*(c[hi][1]-c[lo][1]); };
 
-const nodeTip = n => `${n.label}\n${n.agent} · ${n.project}${n.branch ? ' · '+n.branch : ''}${n.theme ? '\ntheme: '+n.theme : ''}\n${fmt(n.out)}${n.est ? ' (estimated)' : ''} output tokens · ${n.subs} sub-agents · ${n.kids} built on it\n${date(n.start)} → ${date(n.end)}`;
+const nodeTip = n => `${n.label}\n${n.agent} · ${n.project}${n.branch ? ' · '+n.branch : ''}${n.theme ? '\ntheme: '+n.theme : ''}\n${fmt(winOut(n))}${n.est ? ' (estimated)' : ''} output tokens · ${n.subs} sub-agents · ${n.kids} built on it\n${date(n.start)} → ${date(n.end)}`;
 
 // ================= 4. PETRI DISH (time-lapse / live) =================
 const dc = $('dish'), dx = dc.getContext('2d'); let DW = 0, DH = 0, dn = [], de = [], centers = new Map(), now = 0, playing = true, lastF = 0, atEnd = false;
@@ -111,7 +127,7 @@ const dishR = () => Math.max(100, Math.min(DW, DH-70)/2 - 14);
 const lastActive = n => Math.max(lastGrowth(n), n.start);  // newest thing this cell did, as of the dish clock
 let rankOf = new Map();  // cell id -> 0 = newest in its colony
 function rebuildDish() {
-  const live = REAL.filter(n => n.out > 0 && (showUnthemed || n.theme !== 'unthemed')), counts = new Map(); for (const n of live) counts.set(n.theme, (counts.get(n.theme) || 0) + 1);
+  const live = REAL.filter(n => n.out > 0 && n.end >= START && included(n) && (showUnthemed || n.theme !== 'unthemed')), counts = new Map(); for (const n of live) counts.set(n.theme, (counts.get(n.theme) || 0) + 1);
   const maxC = Math.max(1, ...[...counts].filter(([k]) => k !== 'unthemed').map(([, v]) => v)), prev = centers; centers = new Map();
   for (const [name, c] of counts) { const o = prev.get(name);  // keep positions across live updates so colonies do not jump
     centers.set(name, { x:o ? o.x : 0, y:o ? o.y : 0, cur:o?.cur, prev:o?.prev, chg:o?.chg, tx:0, ty:0, last:0, r:dishR()*(0.08 + 0.22*Math.sqrt(c/maxC)), count:c, name, seed:hue(name)/57 }); }
@@ -200,6 +216,7 @@ function drawDish() {
       dx.globalAlpha = alpha; dx.lineWidth = 4; dx.strokeStyle = '#f6f4e4e6'; dx.strokeText(name, lx, ty); dx.fillStyle = `hsl(${tcol(c.name).h} 55% 26%)`; dx.fillText(name, lx, ty); }
     dx.globalAlpha = 1; dx.font = '10px system-ui'; dx.fillStyle = '#7b8794'; dx.fillText(`${c.live} ${c.live === 1 ? 'session' : 'sessions'}`, lx, ty+12); dx.font = '600 11px system-ui';
   }
+  if (!dn.length) { dx.globalAlpha = 1; dx.font = '13px system-ui'; dx.fillStyle = '#7b8794'; dx.textAlign = 'center'; dx.fillText('No sessions to show. Choose agents in the Agents menu.', 0, 0); }
   dx.restore(); dx.globalAlpha = 1;
 }
 function hslRgb(h, s, l) { s /= 100; l /= 100; const k = n => (n + h/30) % 12, a = s*Math.min(l, 1-l), f = n => l - a*Math.max(-1, Math.min(k(n)-3, 9-k(n), 1)); return [255*f(0), 255*f(8), 255*f(4)]; }
@@ -213,13 +230,15 @@ function tcol(theme) {  // golden-angle hues keep neighbours apart; 'unthemed' s
 function shuffleColours() {  // new seed and a new random order of who gets which hue
   const names = [...new Set(REAL.map(n => n.theme))].sort(() => Math.random() - 0.5); colorSeed = Math.random()*360; themeCol = new Map(); themeSeq = 0; names.forEach(tcol);
 }
+const grown = (n, tt) => Math.max(0, cumAt(n, tt) - (n._base || 0));   // tokens since the chosen date
+const winOut = n => Math.max(0, n.out - (n._base || 0));
 const dishColor = n => tcol(n.theme).css;
 const dotR = tokens => 2.5 + 2.7*Math.log10(1 + tokens/500); // log scale: 1k tokens ~ 3.6px wide growth shows on small sessions too
-const radiusAt = n => dotR(cumAt(n, now));
+const radiusAt = n => dotR(grown(n, now));
 const lastGrowth = n => { let l = 0; for (const p of n.curve) if (p[0] <= now) l = p[0]; return l; };
 dc.onclick = ev => { const p = pickIn(dc, dn.filter(q => q.d.start <= now), q => radiusAt(q.d), { clientX:ev.clientX, clientY:ev.clientY+28 }, DW, DH); if (p) select(p.d.id); };
 dc.onmousemove = ev => { const p = pickIn(dc, dn.filter(q => q.d.start <= now), q => radiusAt(q.d), { clientX:ev.clientX, clientY:ev.clientY+28 }, DW, DH);
-  dc.style.cursor = p ? 'pointer' : 'default'; p ? showTip(ev, nodeTip(p.d) + `\nat this moment: ${fmt(cumAt(p.d, now))} of ${fmt(p.d.out)} tokens`) : tip.style.display = 'none'; };
+  dc.style.cursor = p ? 'pointer' : 'default'; p ? showTip(ev, nodeTip(p.d) + `\nat this moment: ${fmt(grown(p.d, now))} of ${fmt(winOut(p.d))} tokens`) : tip.style.display = 'none'; };
 dc.onmouseleave = () => { tip.style.display = 'none'; };   // the tooltip must not outlive the pointer
 $('play').onclick = () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; };
 $('shufBtn').onclick = () => { shuffleColours(); };
@@ -235,7 +254,7 @@ function select(id) {
   const files = e => e.paths.map(p => esc(base(p))).join(', ');
   $('cardBody').innerHTML = `<h2>${esc(n.label)}</h2><div><span class="tag">${esc(n.agent)}</span><span class="tag">${esc(n.theme)}</span></div>
     <div class="mute">${esc(n.project)}${n.branch ? ' · '+esc(n.branch) : ''} · ${date(n.start)} → ${date(n.end)}</div>
-    <div>${fmt(n.out)} output${n.est ? ' (estimated)' : ''} · ${fmt(n.inn)} input · ${fmt(n.cache)} cached · ${n.subs} sub-agents</div>
+    <div>${fmt(winOut(n))} output${n.est ? ' (estimated)' : ''} · ${fmt(n.inn)} input · ${fmt(n.cache)} cached · ${n.subs} sub-agents</div>
     <p><b>Others built on its work</b> (${out.length})</p><ul>${out.map(e => `<li>${link(e.b)}: ${files(e)}</li>`).join('') || '<li class="mute">none</li>'}</ul>
     <p><b>It built on</b> (${inn.length})</p><ul>${inn.map(e => `<li>${link(e.a)}: ${files(e)}</li>`).join('') || '<li class="mute">none</li>'}</ul>`;
   $('card').style.display = 'block';
@@ -245,16 +264,37 @@ $('cardX').onclick = () => select(null);
 
 // ================= legend =================
 function setDays() {
-  $('legDays').textContent = date(DATA.since); const s = $('since'); s.value = date(DATA.since); s.max = date(Date.now()/1000);
+  $('legDays').textContent = date(START); const s = $('since'); s.value = date(START); s.max = date(T1);
   if (!location.protocol.startsWith('http')) s.min = date(DATA.since);   // a static snapshot cannot look further back than it was built
 }
-$('since').onchange = async ev => {  // served: rebuild the window from that date; snapshot: just start the replay there
+$('since').onchange = async ev => {  // served: rebuild the window from that date; snapshot: narrow the window to it
   const v = ev.target.value; if (!v) return;
-  if (location.protocol.startsWith('http')) { try { load(await (await fetch('/graph.json?since=' + v, { cache:'no-store' })).json(), true); setDays(); } catch {} }
-  else now = Math.max(T0, Date.parse(v + 'T00:00:00Z')/1000);
+  if (location.protocol.startsWith('http')) {
+    try { userStart = 0; load(await (await fetch('/graph.json?since=' + v, { cache:'no-store' })).json(), true); setDays(); } catch {}
+  } else {
+    userStart = Date.parse(v + 'T00:00:00Z')/1000; index(); rebuildDish(); setDays(); now = T0;   // the play bar now starts here
+    if (sel && N.get(sel) && (N.get(sel).end < START || !included(N.get(sel)))) select(null);
+  }
   playing = true; $('play').textContent = 'Pause';
 };
 $('sizeScale').innerHTML = [[1e3,'1k'],[1e4,'10k'],[1e5,'100k'],[1e6,'1M']].map(([v,l]) => `<div><i style="width:${2*dotR(v)}px;height:${2*dotR(v)}px"></i>${l}</div>`).join('');
+function agentsPanel() {
+  const counts = {}; for (const n of REAL) counts[n.agent] = (counts[n.agent] || 0) + 1;
+  $('agList').innerHTML = Object.keys(counts).sort().map(a => {
+    const m = DATA.agentMeta?.[a] || {}, notes = [m.estimated ? 'tokens estimated' : '', m.experimental ? 'experimental' : ''].filter(Boolean).join(', ');
+    return `<label class="agrow"><input type="checkbox" data-a="${esc(a)}" ${disabledAgents.has(a) ? '' : 'checked'}><span>${esc(agentLabel(a))}</span><span class="mute">${counts[a]} sessions${notes ? ' · ' + esc(notes) : ''}</span></label>`;
+  }).join('');
+}
+function setAgents(off) {   // apply, remember, redraw
+  disabledAgents = off; try { localStorage.setItem('agent-dish-agents-off', JSON.stringify([...off])); } catch {}
+  index(); rebuildDish(); agentsPanel(); if (sel && N.get(sel) && !included(N.get(sel))) select(null);
+}
+$('agList').onchange = ev => { const a = ev.target.dataset.a; if (!a) return; const off = new Set(disabledAgents); ev.target.checked ? off.delete(a) : off.add(a); setAgents(off); };
+$('agAll').onclick = () => setAgents(new Set());
+$('agNone').onclick = () => setAgents(new Set(REAL.map(n => n.agent)));
+$('agBtn').onclick = ev => { ev.stopPropagation(); const open = $('agents').style.display !== 'block'; $('agents').style.display = open ? 'block' : 'none'; if (open) agentsPanel(); };
+document.addEventListener('click', ev => { if (!$('agents').contains(ev.target)) $('agents').style.display = 'none'; });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') $('agents').style.display = 'none'; });
 function showLegend(on) { $('legend').style.display = on ? '' : 'none'; $('legToggle').style.background = on ? '#e8edf2' : '#fff'; try { localStorage.setItem('agent-dish-legend', on ? '1' : '0'); } catch {} }
 $('legBtn').onclick = () => showLegend(false);   // the panel's own "hide"
 $('legToggle').onclick = () => showLegend($('legend').style.display === 'none');
@@ -265,7 +305,7 @@ $('unth').checked = showUnthemed;
 $('unth').onchange = ev => { showUnthemed = ev.target.checked; try { localStorage.setItem('agent-dish-unthemed', showUnthemed ? '1' : '0'); } catch {} rebuildDish(); };
 function layout() { [DW,DH] = fitTo(dc); }
 window.onresize = () => { layout(); rebuildDish(); };
-function load(data, first) { DATA = data; index(); rebuildDish(); if (first) now = T0; if (sel && N.get(sel)) select(sel); }
+function load(data, first) { DATA = data; index(); rebuildDish(); if (first) now = T0; now = Math.max(now, T0); if (sel && N.get(sel)) select(sel); }
 load(DATA, true); layout(); rebuildDish(); setDays();
 (function loop(ts) {
   const dt = Math.min(0.1, (ts-lastF)/1000 || 0); lastF = ts;
@@ -274,7 +314,7 @@ load(DATA, true); layout(); rebuildDish(); setDays();
   for (const c of centers.values()) { c.x += (c.tx-c.x)*0.04; c.y += (c.ty-c.y)*0.04; }
   forces(dn, de, cellTarget, 0.05);
   for (const p of dn) { const lim = dishR() - 8 - radiusAt(p.d) - (p.d.divs.length ? 6 : 0), d = Math.hypot(p.x, p.y); if (d > lim) { p.x *= lim/d; p.y *= lim/d; p.vx *= -0.3; p.vy *= -0.3; } }
-  drawDish(); $('tot').textContent = fmt(dn.reduce((a, p) => a + cumAt(p.d, now), 0)) + ' output tokens so far'; $('clock').textContent = new Date(now*1000).toISOString().replace('T',' ').slice(0,16) + ' UTC';
+  drawDish(); $('tot').textContent = fmt(dn.reduce((a, p) => a + grown(p.d, now), 0)) + ' output tokens so far'; $('clock').textContent = new Date(now*1000).toISOString().replace('T',' ').slice(0,16) + ' UTC';
   requestAnimationFrame(loop);
 })(0);
 // live mode: when served by `agent-dish serve`, re-read graph.json and keep growing

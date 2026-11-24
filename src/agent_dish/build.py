@@ -179,6 +179,12 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
         if a in S and b in S
     ]
 
+    present = {n["agent"] for n in nodes}
+    meta = {
+        ad.name: dict(label=ad.label, experimental=ad.experimental, estimated=ad.tokens_estimated)
+        for ad in selected(agents)
+        if ad.name in present
+    }
     graph = dict(
         days=days,
         since=cut,
@@ -187,6 +193,7 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
         nodes=nodes,
         edges=edges,
         colonyNames=names,
+        agentMeta=meta,
     )
     tmp = os.path.join(out_dir, "graph.json.tmp")
     with open(tmp, "w") as fh:

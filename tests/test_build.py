@@ -53,3 +53,14 @@ def test_render_embeds_data_safely(roots):
 def test_parse_since():
     assert parse_since("2026-10-01") == 1_790_812_800
     assert parse_since(None) is None
+
+
+def test_agent_meta_labels_every_agent_present_and_flags_the_honest_caveats(roots):
+    g = build(days=30, agents="all", now=NOW, log=lambda *_: None)
+    meta = g["agentMeta"]
+    assert set(meta) == set(g["agents"])
+    assert meta["kiro"]["estimated"] and not meta["claude"]["estimated"]
+    assert meta["gemini"]["experimental"] and meta["codex"]["experimental"] and not meta["cowork"]["experimental"]
+    assert meta["cowork"]["label"] == "Claude Cowork"
+    only = build(days=30, agents="claude", now=NOW, log=lambda *_: None)
+    assert set(only["agentMeta"]) == {"claude"}  # only agents that were asked for and found

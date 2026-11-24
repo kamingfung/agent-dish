@@ -7,6 +7,7 @@ import math
 import random
 import time
 
+from .adapters import ADAPTERS
 from .themes import DAY
 
 AGENTS = ("claude", "cowork", "kiro", "antigravity", "gemini", "codex")  # the order of the weights below
@@ -223,4 +224,8 @@ def demo_graph(days=30, end=None, seed=7):
         nodes=nodes,
         edges=edges,
         colonyNames=names,
+        agentMeta={
+            a.name: dict(label=a.label, experimental=a.experimental, estimated=a.tokens_estimated)
+            for a in ADAPTERS.values()
+        },
     )
