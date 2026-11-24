@@ -14,7 +14,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       - run: just release-check "$GITHUB_REF_NAME"
       - run: uv sync --locked
       - run: just test
@@ -50,8 +50,8 @@ jobs:
       contents: read
       id-token: write # npm "trusted publishing" and provenance: no token is stored anywhere
     steps:
-      - uses: actions/checkout@v7
-      - uses: extractions/setup-just@v3
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
