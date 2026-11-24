@@ -71,8 +71,8 @@ environment variable (`AGENT_DISH_CLAUDE_ROOT`, `..._COWORK_ROOT`, `..._KIRO_ROO
 ## Use
 
 ```bash
-agent-dish serve --open                 # live dish at http://127.0.0.1:3474, last 30 days
-agent-dish serve --port 4000          # another port; the default 3474 is fixed so bookmarks keep working
+agent-dish serve --open                 # live dish at http://127.0.0.1:3474 (a random free port if busy), last 30 days
+agent-dish serve --port 4000          # another primary port; if it is busy a random free one is used
 agent-dish serve --since 2026-10-01     # start from a date instead (you can also pick one in the page)
 agent-dish serve --agents claude,kiro   # only some agents
 agent-dish build --out .                # one self-contained agent-dish.html snapshot

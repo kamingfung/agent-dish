@@ -25,20 +25,22 @@ def parse_since(text):
         raise SystemExit(f"--since must look like 2026-10-01, got '{text}'") from None
 
 
-DEFAULT_PORT = (
-    3474  # "DISH" on a phone keypad. Static on purpose: the page keeps its choices per address (port included)
-)
+# "DISH" on a phone keypad: the primary port, so bookmarks and the page's saved choices (kept per address) stay put
+DEFAULT_PORT = 3474
 
 
 def bind(host, port, handler):
-    """Serve on exactly `port`. If it is taken, say so and stop: a quietly different port would break bookmarks."""
+    """Serve on `port`; if it is taken, fall back to a random free port and say so. Port 0 asks for a random one.
+
+    Returns (server, note). The primary port is stable; the fallback only happens when something else, or another
+    agent-dish, already holds it."""
     try:
-        return http.server.ThreadingHTTPServer((host, port), handler)
-    except OSError as err:
-        raise SystemExit(
-            f"port {port} is already in use (agent-dish may already be running at http://{host}:{port}/).\n"
-            "Open that address, or pick another port with --port N."
-        ) from err
+        return http.server.ThreadingHTTPServer((host, port), handler), None
+    except OSError:
+        if port == 0:
+            raise
+        server = http.server.ThreadingHTTPServer((host, 0), handler)
+        return server, f"port {port} is busy (is agent-dish already running there?), using {server.server_address[1]}"
 
 
 def render(graph):
@@ -144,11 +146,14 @@ def cmd_serve(args):
         def log_message(self, *a):
             pass
 
-    server = bind(args.host, args.port, Handler)
+    server, note = bind(args.host, args.port, Handler)
+    if note:
+        print(note, flush=True)
     url = f"http://{args.host}:{server.server_address[1]}/"
     print(
         f"agent-dish live at {url}  (agents: {', '.join(a.name for a in adapters)}; "
-        f"last {args.days} days; Ctrl+C to stop)"
+        f"last {args.days} days; Ctrl+C to stop)",
+        flush=True,  # a piped or redirected run must still show where the dish is
     )
     if args.open:
         webbrowser.open(url)
@@ -177,7 +182,7 @@ def main(argv=None):
         "--port",
         type=int,
         default=DEFAULT_PORT,
-        help=f"default {DEFAULT_PORT}",
+        help=f"primary port (default {DEFAULT_PORT}); a random free one is used if it is busy",
     )
     s.add_argument("--host", default="127.0.0.1")
     s.set_defaults(fn=cmd_serve)
