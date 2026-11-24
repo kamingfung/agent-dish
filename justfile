@@ -59,10 +59,38 @@ build:
     uv build
     uvx twine check dist/*
 
-# release only if the tag matches pyproject.toml, e.g. `just release-check v0.1.0`
+# release only if the tag matches the Python and npm versions, e.g. `just release-check v0.1.0`
 release-check tag:
-    @v=$(python3 -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"); \
-      [ "v$v" = "{{ tag }}" ] || { echo "tag {{ tag }} does not match version v$v"; exit 1; }
+    @python3 -c "import json,tomllib,sys; t=sys.argv[1]; py=tomllib.load(open('pyproject.toml','rb'))['project']['version']; js=json.load(open('npm/package.json'))['version']; sys.exit(0 if t==f'v{py}'==f'v{js}' else f'tag {t}, pyproject {py}, npm {js}: they must all match')" {{ tag }}
+
+# copy the Python sources into the npm package (npm/ is a thin launcher around them)
+npm-sync:
+    rm -rf npm/python npm/LICENSE
+    mkdir -p npm/python
+    cp -R src/agent_dish npm/python/agent_dish
+    find npm/python -name __pycache__ -type d -prune -exec rm -rf {} +
+    cp LICENSE npm/LICENSE
+
+# list exactly what would be published to npm and fail on anything unexpected
+npm-check: npm-sync
+    python3 scripts/check_npm_pack.py
+
+# build the npm tarball into dist-npm/
+npm-pack: npm-sync
+    rm -rf dist-npm && mkdir dist-npm
+    cd npm && npm pack --ignore-scripts --pack-destination ../dist-npm
+
+# install the tarball into a scratch folder and run the real command (needs Node and Python)
+npm-smoke: npm-check npm-pack
+    #!/usr/bin/env bash
+    set -euo pipefail
+    d=$(mktemp -d)
+    tgz=$(ls "$PWD"/dist-npm/agent-dish-*.tgz)   # an absolute path: npm reads a bare relative one as a GitHub shorthand
+    npm install --prefix "$d" --ignore-scripts --no-audit --no-fund "$tgz"
+    "$d/node_modules/.bin/agent-dish" --version
+    "$d/node_modules/.bin/agent-dish" demo --out "$d/out"
+    test -s "$d/out/agent-dish-demo.html"
+    echo "npm smoke test passed ($d)"
 
 # open the demo dish (invented sessions)
 demo:

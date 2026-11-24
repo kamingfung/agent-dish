@@ -42,3 +42,20 @@ jobs:
           name: dist
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
+  npm:
+    needs: build
+    if: vars.PUBLISH_TO_NPM == 'true' # off until you set this repository variable (see docs/releasing.md)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write # npm "trusted publishing" and provenance: no token is stored anywhere
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+      - run: just npm-check
+      - run: npm publish --provenance --access public
+        working-directory: npm
