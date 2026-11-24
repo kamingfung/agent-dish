@@ -1,21 +1,21 @@
 import json
 
-from session_cells.build import build
-from session_cells.cli import parse_since, render
+from agent_dish.build import build
+from agent_dish.cli import parse_since, render
 from tests.conftest import NOW
 
 
 def test_build_end_to_end(roots):
     g = build(days=30, agents="all", now=NOW, log=lambda *_: None)
     by = {n["id"]: n for n in g["nodes"]}
-    assert set(by) == {"A", "B", "sess_k1", "uuid-1", "cdx-1"}
-    assert {n["agent"] for n in g["nodes"]} == {"claude", "kiro", "antigravity", "codex"}
+    assert set(by) == {"A", "B", "sess_k1", "uuid-1", "cdx-1", "cw1", "gem-1"}
+    assert {n["agent"] for n in g["nodes"]} == {"claude", "cowork", "kiro", "antigravity", "gemini", "codex"}
     assert by["A"]["out"] == 155 and by["A"]["subs"] == 1       # sub-agent tokens fold into the parent
     assert by["sess_k1"]["est"] and not by["A"]["est"]
-    assert g["agents"] == ["antigravity", "claude", "codex", "kiro"]
+    assert g["agents"] == ["antigravity", "claude", "codex", "cowork", "gemini", "kiro"]
     # B read a file A wrote, and the Kiro session edited it: hand-offs A -> B and A -> Kiro (edits count too)
-    assert sorted((e["a"], e["b"]) for e in g["edges"] if e["a"] == "A") == [("A", "B"), ("A", "sess_k1")]
-    assert by["A"]["kids"] == 2 and by["B"]["kids"] == 0
+    assert sorted((e["a"], e["b"]) for e in g["edges"] if e["a"] == "A") == [("A", "B"), ("A", "gem-1"), ("A", "sess_k1")]
+    assert by["A"]["kids"] == 3 and by["B"]["kids"] == 0
     assert all(set(n) >= {"curve", "divs", "theme", "label", "project", "start", "end"} for n in g["nodes"])
     assert by["A"]["curve"][-1][1] == 155                        # cumulative tokens end at the total
 

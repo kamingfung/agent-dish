@@ -14,7 +14,7 @@ READ_CMDS = {"cat", "sed", "head", "tail", "nl", "less", "bat"}
 
 
 class CodexAdapter(Adapter):
-    name, label, root_env, version = "codex", "Codex", "SESSION_CELLS_CODEX_ROOT", 1
+    name, label, root_env, version = "codex", "Codex", "AGENT_DISH_CODEX_ROOT", 1
     experimental = True
 
     def default_root(self):

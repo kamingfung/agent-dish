@@ -1,6 +1,6 @@
 """The adapter contract.
 
-An adapter teaches session-cells one agent. It finds that agent's transcript files and turns one file
+An adapter teaches agent-dish one agent. It finds that agent's transcript files and turns one file
 into a ParseResult: plain dicts and tuples, independent of any time window, so results can be cached.
 
     nodes   {session_id: dict(lo, hi, cwd, branch, slug, agent)}   first/last timestamp, where it ran

@@ -1,6 +1,6 @@
 # How to read the dish
 
-The dish replays your agent sessions as living cells, then keeps growing live when served by `session-cells serve`.
+The dish replays your agent sessions as living cells, then keeps growing live when served by `agent-dish serve`.
 Pick the start date with the **from** box in the header (a snapshot can only start at or after the date it was built from).
 
 ## What you are looking at

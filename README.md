@@ -1,53 +1,79 @@
-# session-cells
+# agent-dish
 
-Your AI coding-agent sessions as living cells in a petri dish.
+**Let's cultivate your AI agents.**
 
-Every session (Claude Code, Kiro, Antigravity, Codex) is a cell. It appears when the session starts, grows as it
-produces tokens, buds a daughter dot for each sub-agent it spawns, and fades when it goes quiet. Sessions whose
-prompts and files share a recurring phrase form a colony, named by that phrase. The colony's title follows what
-it has been working on lately. Press play to replay the last month, or leave it running to watch live.
+<p align="center">
+  <img src="docs/media/dish.gif" alt="A petri dish of colonies growing over a month of agent sessions" width="760">
+</p>
+<p align="center"><sub>Invented demo data. Run <code>agent-dish demo --open</code> to play with it yourself.</sub></p>
 
-Everything runs on your machine. Nothing is uploaded.
+Every session you run with an AI agent is a cell. It appears when the session starts, grows as it produces tokens,
+buds a small dot for every sub-agent it spawns, and fades when it goes quiet. Sessions whose prompts and files keep
+returning to the same phrase gather into a colony, named by that phrase. The colony's title moves on as the work does.
+Press play to replay your last month, or leave it running and watch the dish grow live.
 
-## Install
+It reads the transcripts your agents already write on your machine. Nothing is uploaded.
+
+## Cultivate
 
 ```bash
-pipx install git+https://github.com/kamingfung/session-cells     # or: pip install git+https://github.com/kamingfung/session-cells
+pipx install git+https://github.com/kamingfung/agent-dish    # or: pip install git+https://github.com/kamingfung/agent-dish
+
+agent-dish demo --open       # try it first, on invented sessions
+agent-dish serve --open      # your own dish, live, last 30 days
 ```
 
 Python 3.9 or newer, standard library only.
 
-## Use
+## What you get
 
-```bash
-session-cells serve --open                 # live dish at http://127.0.0.1:8765, last 30 days
-session-cells serve --since 2026-10-01     # start from a date instead (you can also pick one in the page)
-session-cells serve --agents claude,kiro   # only some agents
-session-cells build --out .                # one self-contained session-cells.html snapshot
-session-cells agents                       # which agents' sessions were found on this machine
-```
+<table>
+<tr>
+<td width="50%"><img src="docs/media/dish.png" alt="The dish: coloured colonies with titles, session counts and a heat-map floor"><br><sub><b>The dish.</b> Each colour is a colony. The glow underneath is a heat map of where work clusters. The colony with the newest activity sits in the middle.</sub></td>
+<td width="50%"><img src="docs/media/card.png" alt="Clicking a cell shows what it built on and who built on it"><br><sub><b>One session.</b> Click a cell for its agent, tokens, and what it built on or what later built on it.</sub></td>
+</tr>
+<tr>
+<td colspan="2"><img src="docs/media/legend.png" alt="The dish with its legend open"><br><sub><b>Built-in legend.</b> Size is tokens so far, a ring means working now, black dots are sub-agents, an orange line is a hand-off.</sub></td>
+</tr>
+</table>
 
-The first run reads every transcript in the window (about 15 seconds for a thousand). After that only
-transcripts that changed are re-read, so live updates take about a second.
+Use it to see:
+
+- which pieces of work are alive right now, and which went quiet,
+- what themes your sessions fall into, and how each one drifts over weeks,
+- which sessions other sessions built on (a later session read or edited a file an earlier one wrote).
 
 ## Supported agents
 
 | Agent | Where it reads | Status |
 |---|---|---|
 | Claude Code | `~/.claude/projects` | Checked against real sessions. Tokens as reported. |
+| Claude Cowork (Claude Desktop agent mode, non-coding) | `~/Library/Application Support/Claude/local-agent-mode-sessions` | Checked against real sessions. Same transcript format as Claude Code. |
 | Kiro | `~/.kiro/sessions` | Checked against real sessions. Kiro records no token counts, so sizes are estimated as characters / 4 and are only comparable between Kiro sessions. |
-| Antigravity (`agy`) | `~/.gemini/antigravity-cli` | Works; checked on a small number of real sessions. Tokens as reported. |
-| Codex | `~/.codex/sessions` | **Experimental.** Written from the documented rollout format and tested only on a synthetic fixture. Please open an issue with a redacted sample if it misbehaves. |
+| Antigravity (`agy`) | `~/.gemini/antigravity-cli` | Checked on a small number of real sessions. Tokens as reported. |
+| Gemini CLI | `~/.gemini/tmp/*/chats` | **Experimental.** Written from the chat-recording format and tested on a synthetic fixture only. |
+| Codex | `~/.codex/sessions` | **Experimental.** Written from the documented rollout format and tested on a synthetic fixture only. |
 
-Each path can be overridden with an environment variable (`SESSION_CELLS_CLAUDE_ROOT`, `..._KIRO_ROOT`,
-`..._ANTIGRAVITY_ROOT`, `..._CODEX_ROOT`). Adding another agent is one small file, see
+If an experimental agent misbehaves, please open an issue with a redacted sample. Each location can be overridden with an
+environment variable (`AGENT_DISH_CLAUDE_ROOT`, `..._COWORK_ROOT`, `..._KIRO_ROOT`, `..._ANTIGRAVITY_ROOT`,
+`..._GEMINI_ROOT`, `..._CODEX_ROOT`). Adding another agent is one small file:
 [docs/adding-an-agent.md](docs/adding-an-agent.md).
 
-## Reading the dish
+## Use
 
-See [docs/how-to-read.md](docs/how-to-read.md), or press **Legend** in the page. In short: size is output tokens so far,
-a ring means working now, black dots are sub-agents, an orange line is a hand-off (a later session read or edited
-a file this one wrote), and the colony nearest the middle is the most recently active.
+```bash
+agent-dish serve --open                 # live dish at http://127.0.0.1:8765, last 30 days
+agent-dish serve --since 2026-10-01     # start from a date instead (you can also pick one in the page)
+agent-dish serve --agents claude,kiro   # only some agents
+agent-dish build --out .                # one self-contained agent-dish.html snapshot
+agent-dish agents                       # which agents' sessions were found on this machine
+agent-dish demo --open                  # invented sessions, nothing from your machine
+```
+
+The first run reads every transcript in the window (about 15 seconds for a thousand). After that only transcripts that
+changed are re-read, so live updates take about a second.
+
+How to read what you see: [docs/how-to-read.md](docs/how-to-read.md), or press **Legend** in the page.
 
 ## What it can and cannot tell you
 
@@ -59,10 +85,11 @@ a file this one wrote), and the colony nearest the middle is the most recently a
 
 ## Privacy
 
-Transcripts can contain private code and prompts. session-cells reads them locally, keeps prompt text in memory only
-to find recurring phrases, and writes just the phrases. Its output (`graph.json`, the HTML snapshot and the cache in
-`~/.cache/session-cells`, override with `SESSION_CELLS_HOME`) still contains file paths, session names, branch names and
-those phrases. Do not publish or share it without looking at it first. The server binds to `127.0.0.1` only.
+Transcripts can contain private code and prompts. agent-dish reads them locally, keeps prompt text in memory only to find
+recurring phrases, and writes just the phrases. Its output (`graph.json`, the HTML snapshot and the cache in
+`~/.cache/agent-dish`, override with `AGENT_DISH_HOME`) still contains file paths, session names, branch names and those
+phrases. Do not publish or share it without looking at it first. The server binds to `127.0.0.1` only. The pictures in this
+README come from `agent-dish demo`, which is invented.
 
 ## Development
 
@@ -71,7 +98,14 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/python -m pytest
 ```
 
-The tests use synthetic transcripts, never real data.
+The tests use synthetic transcripts, never real data. The README images are regenerated by
+[scripts/make_media.cjs](scripts/make_media.cjs) from the demo dish.
+
+## Let's cultivate your AI agents
+
+```bash
+pipx install git+https://github.com/kamingfung/agent-dish && agent-dish serve --open
+```
 
 ## License
 

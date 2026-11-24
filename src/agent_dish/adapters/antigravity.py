@@ -23,7 +23,7 @@ def _value(v):
 
 
 class AntigravityAdapter(Adapter):
-    name, label, root_env, version = "antigravity", "Antigravity", "SESSION_CELLS_ANTIGRAVITY_ROOT", 1
+    name, label, root_env, version = "antigravity", "Antigravity", "AGENT_DISH_ANTIGRAVITY_ROOT", 1
 
     def default_root(self):
         return os.path.expanduser("~/.gemini/antigravity-cli")

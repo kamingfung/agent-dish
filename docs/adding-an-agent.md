@@ -1,6 +1,6 @@
 # Adding an agent
 
-An adapter is one file in `src/session_cells/adapters/`. It finds an agent's transcripts and turns one file into a
+An adapter is one file in `src/agent_dish/adapters/`. It finds an agent's transcripts and turns one file into a
 plain result. Copy the closest existing adapter (`kiro.py` for a per-session folder, `claude.py` for one file per session).
 
 ```python
@@ -8,7 +8,7 @@ from .base import Adapter, add_msg, new_result, read_jsonl, touch, ts
 
 class MyAgentAdapter(Adapter):
     name, label = "myagent", "My Agent"
-    root_env = "SESSION_CELLS_MYAGENT_ROOT"     # lets users and tests point somewhere else
+    root_env = "AGENT_DISH_MYAGENT_ROOT"     # lets users and tests point somewhere else
     version = 1                                 # bump when parse() output changes: invalidates the cache
     experimental = False                        # True if not yet checked against real data
     tokens_estimated = False                    # True if the agent records no token counts

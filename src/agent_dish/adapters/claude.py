@@ -23,7 +23,7 @@ def prompt_text(d):
 
 
 class ClaudeAdapter(Adapter):
-    name, label, root_env, version = "claude", "Claude Code", "SESSION_CELLS_CLAUDE_ROOT", 5
+    name, label, root_env, version = "claude", "Claude Code", "AGENT_DISH_CLAUDE_ROOT", 5
 
     def default_root(self):
         return os.path.expanduser("~/.claude/projects")

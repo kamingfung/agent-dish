@@ -37,7 +37,7 @@ def roots(tmp_path, monkeypatch):
     ])
     write_jsonl(str(claude / "-proj" / "B.jsonl"), [cmsg("B", d + 500, "m3", 70, "Read", file_path="/w/a.py")])
     write_jsonl(str(claude / "-proj" / "A" / "subagents" / "agent-1.jsonl"), [cmsg("A", d + 15, "m4", 5)])
-    monkeypatch.setenv("SESSION_CELLS_CLAUDE_ROOT", str(claude))
+    monkeypatch.setenv("AGENT_DISH_CLAUDE_ROOT", str(claude))
 
     kiro = tmp_path / "kiro"
     k = str(kiro / "hash1" / "sess_k1")
@@ -50,7 +50,7 @@ def roots(tmp_path, monkeypatch):
         dict(id="r4", timestamp=iso(d + 33), payload=dict(type="tool_call", toolName="invoke_sub_agent", args={})),
         dict(id="r5", timestamp=iso(d + 34), payload=dict(type="tool_call", toolName="tool_load", args={})),
     ])
-    monkeypatch.setenv("SESSION_CELLS_KIRO_ROOT", str(kiro))
+    monkeypatch.setenv("AGENT_DISH_KIRO_ROOT", str(kiro))
 
     agy = tmp_path / "agy"
     write_jsonl(str(agy / "brain" / "uuid-1" / ".system_generated" / "logs" / "transcript.jsonl"), [
@@ -60,7 +60,7 @@ def roots(tmp_path, monkeypatch):
     ])
     os.makedirs(agy / "cache")
     json.dump({"/home/u/repos/proj/z": "uuid-1"}, open(agy / "cache" / "last_conversations.json", "w"))
-    monkeypatch.setenv("SESSION_CELLS_ANTIGRAVITY_ROOT", str(agy))
+    monkeypatch.setenv("AGENT_DISH_ANTIGRAVITY_ROOT", str(agy))
 
     codex = tmp_path / "codex"
     write_jsonl(str(codex / "2026" / "10" / "01" / "rollout-2026-10-01T00-00-00-cdx-1.jsonl"), [
@@ -70,6 +70,23 @@ def roots(tmp_path, monkeypatch):
         dict(timestamp=iso(d + 53), type="event_msg", payload=dict(type="token_count", info=dict(total_token_usage=dict(input_tokens=500, output_tokens=80, cached_input_tokens=20)))),
         dict(timestamp=iso(d + 54), type="event_msg", payload=dict(type="token_count", info=dict(total_token_usage=dict(input_tokens=900, output_tokens=130, cached_input_tokens=40)))),
     ])
-    monkeypatch.setenv("SESSION_CELLS_CODEX_ROOT", str(codex))
-    monkeypatch.setenv("SESSION_CELLS_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AGENT_DISH_CODEX_ROOT", str(codex))
+    cow = tmp_path / "cowork"
+    write_jsonl(str(cow / "org" / "user" / "local_cw1" / ".claude" / "projects" / "-out" / "cw1.jsonl"), [
+        dict(type="user", sessionId="cw1", timestamp=iso(d + 60), message=dict(content="draft the quarterly summary")),
+        cmsg("cw1", d + 61, "mc1", 300, "Write", file_path="/w/summary.md"),
+    ])
+    monkeypatch.setenv("AGENT_DISH_COWORK_ROOT", str(cow))
+
+    gem = tmp_path / "gemini"
+    gp = gem / "hash1" / "chats"
+    os.makedirs(gp)
+    json.dump(dict(sessionId="gem-1", projectHash="hash1", startTime=iso(d + 70), messages=[
+        dict(id="g0", timestamp=iso(d + 70), type="user", content="explain the weekly report job"),
+        dict(id="g1", timestamp=iso(d + 71), type="gemini", content="ok", tokens=dict(input=700, output=90, cached=10, thoughts=10, tool=0, total=810),
+             toolCalls=[dict(name="write_file", args=dict(file_path="/w/d.py")), dict(name="read_file", args=dict(absolute_path="/w/a.py"))]),
+    ]), open(gp / "session-2026-10-01T00-00-gem1.json", "w"))
+    os.utime(gp / "session-2026-10-01T00-00-gem1.json", (NOW - 60, NOW - 60))
+    monkeypatch.setenv("AGENT_DISH_GEMINI_ROOT", str(gem))
+    monkeypatch.setenv("AGENT_DISH_HOME", str(tmp_path / "home"))
     return tmp_path

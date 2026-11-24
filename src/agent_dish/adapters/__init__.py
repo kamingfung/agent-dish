@@ -1,9 +1,11 @@
 from .antigravity import AntigravityAdapter
 from .claude import ClaudeAdapter
 from .codex import CodexAdapter
+from .cowork import CoworkAdapter
+from .gemini import GeminiAdapter
 from .kiro import KiroAdapter
 
-ADAPTERS = {a.name: a for a in (ClaudeAdapter(), KiroAdapter(), AntigravityAdapter(), CodexAdapter())}
+ADAPTERS = {a.name: a for a in (ClaudeAdapter(), CoworkAdapter(), KiroAdapter(), AntigravityAdapter(), GeminiAdapter(), CodexAdapter())}
 
 
 def selected(names):

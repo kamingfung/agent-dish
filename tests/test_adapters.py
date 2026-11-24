@@ -1,6 +1,6 @@
 import os
 
-from session_cells.adapters import ADAPTERS
+from agent_dish.adapters import ADAPTERS
 from tests.conftest import NOW
 
 CUT = NOW - 30 * 86400
@@ -56,3 +56,19 @@ def test_missing_roots_find_nothing(monkeypatch, tmp_path):
     for a in ADAPTERS.values():
         monkeypatch.setenv(a.root_env, str(tmp_path / "nope"))
         assert a.discover(0) == []
+
+
+def test_cowork_reads_desktop_agent_sessions_with_the_claude_parser(roots):
+    [r] = parse_all("cowork")
+    assert r["nodes"]["cw1"]["agent"] == "cowork"
+    assert r["msgs"]["mc1"]["out"] == 300 and r["msgs"]["mc1"]["events"][0][:2] == ("w", "/w/summary.md")
+    assert "quarterly summary" in r["prompts"][0][2]
+
+
+def test_gemini_tokens_thoughts_and_tool_paths(roots):
+    [r] = parse_all("gemini")
+    m = r["msgs"]["g1"]
+    assert (m["out"], m["inn"], m["cache"]) == (100, 700, 10)          # output includes thinking tokens
+    assert [e[:2] for e in m["events"]] == [("w", "/w/d.py"), ("r", "/w/a.py")]
+    assert r["prompts"][0][2].startswith("explain the weekly")
+    assert ADAPTERS["gemini"].experimental

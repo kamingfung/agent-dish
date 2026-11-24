@@ -1,4 +1,4 @@
-"""session-cells command line: build a snapshot, or serve the live dish."""
+"""agent-dish command line: build a snapshot, or serve the live dish."""
 import argparse
 import calendar
 import glob
@@ -28,7 +28,7 @@ def parse_since(text):
 
 
 def render(graph):
-    html = resources.files("session_cells").joinpath("web/template.html").read_text(encoding="utf-8")
+    html = resources.files("agent_dish").joinpath("web/template.html").read_text(encoding="utf-8")
     return html.replace("/*DATA*/null", json.dumps(graph, separators=(",", ":")).replace("</", "<\\/"))
 
 
@@ -57,10 +57,24 @@ def cmd_build(args):
     out = os.path.abspath(args.out or ".")
     os.makedirs(out, exist_ok=True)
     graph = build(args.days, args.agents, data_dir(), since=parse_since(args.since))
-    path = os.path.join(out, "session-cells.html")
+    path = os.path.join(out, "agent-dish.html")
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(render(graph))
-    print(f"wrote {path} (a snapshot; use `session-cells serve` for live updates)")
+    print(f"wrote {path} (a snapshot; use `agent-dish serve` for live updates)")
+    if args.open:
+        webbrowser.open("file://" + path)
+
+
+def cmd_demo(args):
+    from .demo import demo_graph
+    end = parse_since(args.end) if args.end else None
+    graph = demo_graph(args.days, end, args.seed)
+    out = os.path.abspath(args.out or ".")
+    os.makedirs(out, exist_ok=True)
+    path = os.path.join(out, "agent-dish-demo.html")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(render(graph))
+    print(f"wrote {path}: invented sessions, nothing from your machine")
     if args.open:
         webbrowser.open("file://" + path)
 
@@ -111,7 +125,7 @@ def cmd_serve(args):
 
     server = http.server.ThreadingHTTPServer((args.host, args.port), Handler)
     url = f"http://{args.host}:{args.port}/"
-    print(f"session-cells live at {url}  (agents: {', '.join(a.name for a in adapters)}; last {args.days} days; Ctrl+C to stop)")
+    print(f"agent-dish live at {url}  (agents: {', '.join(a.name for a in adapters)}; last {args.days} days; Ctrl+C to stop)")
     if args.open:
         webbrowser.open(url)
     try:
@@ -121,7 +135,7 @@ def cmd_serve(args):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="session-cells", description="Your AI coding-agent sessions as living cells in a petri dish.")
+    p = argparse.ArgumentParser(prog="agent-dish", description="Your AI coding-agent sessions as living cells in a petri dish.")
     p.add_argument("--version", action="version", version=__version__)
     sub = p.add_subparsers(dest="cmd", required=True)
     common = argparse.ArgumentParser(add_help=False)
@@ -130,12 +144,19 @@ def main(argv=None):
     common.add_argument("--agents", default="all", help="comma-separated: " + ",".join(ADAPTERS) + " (default all)")
     common.add_argument("--open", action="store_true", help="open the result in your browser")
     b = sub.add_parser("build", parents=[common], help="write a one-file HTML snapshot")
-    b.add_argument("--out", help="folder for session-cells.html (default: current folder)")
+    b.add_argument("--out", help="folder for agent-dish.html (default: current folder)")
     b.set_defaults(fn=cmd_build)
     s = sub.add_parser("serve", parents=[common], help="serve the live dish and keep it updating")
     s.add_argument("--port", type=int, default=8765)
     s.add_argument("--host", default="127.0.0.1")
     s.set_defaults(fn=cmd_serve)
+    d = sub.add_parser("demo", help="a dish of invented sessions, to try it before you have any history")
+    d.add_argument("--days", type=int, default=30)
+    d.add_argument("--seed", type=int, default=7, help="same seed, same dish")
+    d.add_argument("--end", metavar="YYYY-MM-DD", help="pin the last day (default: now)")
+    d.add_argument("--out", help="folder for agent-dish-demo.html (default: current folder)")
+    d.add_argument("--open", action="store_true")
+    d.set_defaults(fn=cmd_demo)
     a = sub.add_parser("agents", help="show which agents' sessions were found on this machine")
     a.set_defaults(fn=cmd_agents)
     args = p.parse_args(argv)

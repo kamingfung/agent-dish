@@ -11,7 +11,7 @@ from .themes import DAY, colony_names, path_terms, terms, themes_for
 
 
 def data_dir():
-    d = os.environ.get("SESSION_CELLS_HOME") or os.path.expanduser("~/.cache/session-cells")
+    d = os.environ.get("AGENT_DISH_HOME") or os.path.expanduser("~/.cache/agent-dish")
     os.makedirs(d, exist_ok=True)
     return d
 

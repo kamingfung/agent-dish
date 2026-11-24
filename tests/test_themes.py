@@ -1,4 +1,4 @@
-from session_cells.themes import DAY, colony_names, terms, themes_for
+from agent_dish.themes import DAY, colony_names, terms, themes_for
 
 
 def test_terms_drop_noise_and_make_phrases():

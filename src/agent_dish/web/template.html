@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Session cells</title>
+<title>Agent dish</title>
 <style>
   :root { --ink:#1f2933; --mute:#7b8794; --line:#d9dee3; --acc:#e0832f; }
   * { box-sizing: border-box; }
@@ -27,7 +27,7 @@
   #ctl input[type=range] { flex:1; }
 </style>
 <header>
-  <h1>Session cells</h1>
+  <h1>Agent dish</h1>
   <span class="mute" id="stats"></span>
   <label class="mute">from <input type="date" id="since"></label>
   <span class="mute" id="live"></span>
@@ -37,7 +37,7 @@
   <canvas id="dish"></canvas>
   <div id="card"><button class="x" id="cardX">&times;</button><div id="cardBody"></div></div>
   <div id="legend"><div class="hd"><span>How to read the dish</span><button id="legBtn">hide</button></div><div id="legBody">
-    <div class="sub">Each dot is one agent session (Claude Code, Kiro, Antigravity, Codex). The dish replays from <span id="legDays"></span>, then keeps growing live when served. Colony titles follow what each colony has been about in the last few days.</div>
+    <div class="sub">Each dot is one agent session (Claude Code, Claude Cowork, Kiro, Antigravity, Gemini, Codex). The dish replays from <span id="legDays"></span>, then keeps growing live when served. Colony titles follow what each colony has been about in the last few days.</div>
     <div class="lr"><div style="flex:1"><b>Size = output tokens so far</b><span class="sub">The dot grows as the session produces tokens (log scale):</span><div id="sizeScale"></div></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="7" fill="#6a4fd6"/><circle cx="17" cy="15" r="11" fill="none" stroke="#6a4fd6" stroke-width="1.5"/></svg><div><b>Ring = working now</b><span class="sub">Produced output in the last 10 minutes.</span></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="7" fill="#6a4fd6" opacity=".3"/></svg><div><b>Faded = dormant</b><span class="sub">Over an hour since its last message.</span></div></div>
@@ -64,7 +64,8 @@ const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'
 const $ = id => document.getElementById(id);
 const tip = $('tip');
 let sel = null, frame = 0, drag = null, alpha = 1;
-let showUnthemed = (() => { try { return localStorage.getItem('session-cells-unthemed') === '1'; } catch { return false; } })();
+const QUERY = new URLSearchParams(location.search);   // ?seed=40 fixes the colours
+let showUnthemed = (() => { try { return localStorage.getItem('agent-dish-unthemed') === '1'; } catch { return false; } })();
 const nameAt = (key, t) => { const a = (DATA.colonyNames || {})[key]; if (!a) return key; let name = key; for (const [d, nm] of a) { if (d <= t) name = nm; else break; } return name; };
 
 function index() {
@@ -72,7 +73,7 @@ function index() {
   MAXOUT = Math.max(1, ...REAL.map(n => n.out));
   T0 = Math.min(...REAL.filter(n => n.start).map(n => n.start)); T1 = Math.max(...REAL.map(n => n.end));
   const by = {}; for (const n of REAL) by[n.agent] = (by[n.agent] || 0) + 1;
-  $('stats').textContent = `from ${date(DATA.since)} · ${REAL.length} sessions (${Object.entries(by).map(([a,c]) => c+' '+a).join(', ')}) · ${fmt(REAL.reduce((a,n)=>a+n.out,0))} output tokens`;
+  $('stats').textContent = `from ${date(DATA.since)} · ${REAL.length} sessions (${Object.entries(by).map(([a,c]) => c+' '+a).join(', ')}) · ${fmt(REAL.reduce((a,n)=>a+n.out,0))} output tokens` + (DATA.demo ? ' · DEMO: invented sessions' : '');
 }
 function fit(c, w, h) { const k = devicePixelRatio||1; c.style.width = w+'px'; c.style.height = h+'px'; c.width = w*k; c.height = h*k; c.getContext('2d').setTransform(k,0,0,k,0,0); return [w,h]; }
 function fitTo(c) { const r = c.parentElement.getBoundingClientRect(); return fit(c, r.width, r.height); }
@@ -136,7 +137,7 @@ function retarget(snap) {
   themed.forEach((c, i) => {
     if (i === 0) { c.tx = 0; c.ty = 0; return; }
     const inner = i <= ring1, k = inner ? i-1 : i-1-ring1, m = inner ? Math.min(ring1, themed.length-1) : themed.length-1-ring1, a = k/Math.max(1, m)*6.283 - 1.57 + (inner ? 0 : 0.3);
-    const rr = R*(inner ? (showUnthemed ? 0.32 : 0.42) : (showUnthemed ? 0.62 : 0.78)); c.tx = Math.cos(a)*rr; c.ty = Math.sin(a)*rr;
+    const rr = R*(inner ? (showUnthemed ? 0.34 : 0.55) : (showUnthemed ? 0.64 : 0.80)); c.tx = Math.cos(a)*rr; c.ty = Math.sin(a)*rr;
   });
   if (snap) for (const c of centers.values()) { c.x = c.tx; c.y = c.ty; }
 }
@@ -202,7 +203,7 @@ function drawDish() {
   dx.restore(); dx.globalAlpha = 1;
 }
 function hslRgb(h, s, l) { s /= 100; l /= 100; const k = n => (n + h/30) % 12, a = s*Math.min(l, 1-l), f = n => l - a*Math.max(-1, Math.min(k(n)-3, 9-k(n), 1)); return [255*f(0), 255*f(8), 255*f(4)]; }
-let colorSeed = Math.random()*360, themeCol = new Map(), themeSeq = 0;
+let colorSeed = QUERY.has('seed') ? +QUERY.get('seed') : Math.random()*360, themeCol = new Map(), themeSeq = 0;
 function tcol(theme) {  // golden-angle hues keep neighbours apart; 'unthemed' stays a quiet grey-blue
   let c = themeCol.get(theme); if (c) return c;
   if (theme === 'unthemed') c = { h:215, s:14, l:60 };
@@ -253,14 +254,14 @@ $('since').onchange = async ev => {  // served: rebuild the window from that dat
   playing = true; $('play').textContent = 'Pause';
 };
 $('sizeScale').innerHTML = [[1e3,'1k'],[1e4,'10k'],[1e5,'100k'],[1e6,'1M']].map(([v,l]) => `<div><i style="width:${2*dotR(v)}px;height:${2*dotR(v)}px"></i>${l}</div>`).join('');
-function showLegend(on) { $('legend').style.display = on ? '' : 'none'; $('legToggle').style.background = on ? '#e8edf2' : '#fff'; try { localStorage.setItem('session-cells-legend', on ? '1' : '0'); } catch {} }
+function showLegend(on) { $('legend').style.display = on ? '' : 'none'; $('legToggle').style.background = on ? '#e8edf2' : '#fff'; try { localStorage.setItem('agent-dish-legend', on ? '1' : '0'); } catch {} }
 $('legBtn').onclick = () => showLegend(false);   // the panel's own "hide"
 $('legToggle').onclick = () => showLegend($('legend').style.display === 'none');
-showLegend((() => { try { return localStorage.getItem('session-cells-legend') !== '0'; } catch { return true; } })());
+showLegend((() => { try { return localStorage.getItem('agent-dish-legend') !== '0'; } catch { return true; } })());
 
 // ================= wiring =================
 $('unth').checked = showUnthemed;
-$('unth').onchange = ev => { showUnthemed = ev.target.checked; try { localStorage.setItem('session-cells-unthemed', showUnthemed ? '1' : '0'); } catch {} rebuildDish(); };
+$('unth').onchange = ev => { showUnthemed = ev.target.checked; try { localStorage.setItem('agent-dish-unthemed', showUnthemed ? '1' : '0'); } catch {} rebuildDish(); };
 function layout() { [DW,DH] = fitTo(dc); }
 window.onresize = () => { layout(); rebuildDish(); };
 function load(data, first) { DATA = data; index(); rebuildDish(); if (first) now = T0; if (sel && N.get(sel)) select(sel); }
@@ -275,7 +276,7 @@ load(DATA, true); layout(); rebuildDish(); setDays();
   drawDish(); $('tot').textContent = fmt(dn.reduce((a, p) => a + cumAt(p.d, now), 0)) + ' output tokens so far'; $('clock').textContent = new Date(now*1000).toISOString().replace('T',' ').slice(0,16) + ' UTC';
   requestAnimationFrame(loop);
 })(0);
-// live mode: when served by `session-cells serve`, re-read graph.json and keep growing
+// live mode: when served by `agent-dish serve`, re-read graph.json and keep growing
 if (location.protocol.startsWith('http')) {
   $('live').textContent = '● live';
   setInterval(async () => { try { const d = await (await fetch('/graph.json', { cache:'no-store' })).json(); if (d.generated !== DATA.generated) { const follow = now >= T1 - 1; load(d, false); if (follow) now = T1; $('live').textContent = '● live · updated ' + new Date().toLocaleTimeString(); setDays(); } } catch {} }, 10000);

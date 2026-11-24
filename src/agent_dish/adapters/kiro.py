@@ -24,7 +24,7 @@ def _paths(args):
 
 
 class KiroAdapter(Adapter):
-    name, label, root_env, version = "kiro", "Kiro", "SESSION_CELLS_KIRO_ROOT", 1
+    name, label, root_env, version = "kiro", "Kiro", "AGENT_DISH_KIRO_ROOT", 1
     tokens_estimated = True
 
     def default_root(self):
