@@ -7,7 +7,6 @@ import subprocess
 from pathlib import Path
 
 import pytest
-import tomllib
 
 ROOT = Path(__file__).resolve().parent.parent
 PKG = json.loads((ROOT / "npm" / "package.json").read_text())
@@ -21,7 +20,8 @@ NETWORK_IMPORT = re.compile(
 
 
 def test_npm_and_python_versions_match():
-    py = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"]
+    # a regex, not tomllib: that module only exists from Python 3.11 and this project supports 3.9
+    py = re.search(r'^version\s*=\s*"([^"]+)"', (ROOT / "pyproject.toml").read_text(), re.M).group(1)
     assert PKG["version"] == py
 
 

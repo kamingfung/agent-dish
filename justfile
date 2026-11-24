@@ -61,7 +61,7 @@ build:
 
 # release only if the tag matches the Python and npm versions, e.g. `just release-check v0.1.0`
 release-check tag:
-    @python3 -c "import json,tomllib,sys; t=sys.argv[1]; py=tomllib.load(open('pyproject.toml','rb'))['project']['version']; js=json.load(open('npm/package.json'))['version']; sys.exit(0 if t==f'v{py}'==f'v{js}' else f'tag {t}, pyproject {py}, npm {js}: they must all match')" {{ tag }}
+    @python3 -c "import json,re,sys; t=sys.argv[1]; py=re.search(r'^version\s*=\s*\"([^\"]+)\"', open('pyproject.toml').read(), re.M).group(1); js=json.load(open('npm/package.json'))['version']; sys.exit(0 if t==f'v{py}'==f'v{js}' else f'tag {t}, pyproject {py}, npm {js}: they must all match')" {{ tag }}
 
 # copy the Python sources into the npm package (npm/ is a thin launcher around them)
 npm-sync:
