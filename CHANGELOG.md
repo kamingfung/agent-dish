@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2026.11.25
+
 - Hand-off lines are hidden by default, because they tangle on a busy dish. Tick **hand-offs** to show them all, or click a
   cell to see its own. A new hand-off still pulses with a ring.
 
