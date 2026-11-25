@@ -5,6 +5,9 @@ The tag is `v` plus the version. The version lives in one place, `__version__` i
 
 ## A GitHub release
 
+Short version: write the notes under `## Unreleased` in `CHANGELOG.md`, commit them, then run `just release`. It stops
+before it does anything public and asks first. The steps it chains, which you can also run by hand:
+
 1. Put the release notes under `## Unreleased` in `CHANGELOG.md`.
 2. `just bump` sets the version to today's date (or the next `.N` if today is taken), dates that changelog section and
    leaves a fresh empty `## Unreleased` above it for the next change.
@@ -14,6 +17,11 @@ The tag is `v` plus the version. The version lives in one place, `__version__` i
 5. The `release` workflow runs: it checks the tag matches the version, runs the tests, builds the wheel, the sdist and the
    single-file `agent-dish.pyz`, and attaches all three to your release. If the release has no notes, it fills them in from
    the changelog.
+
+`just release` refuses to start unless you are on `main`, not behind `origin/main`, have no uncommitted changes to tracked
+files, and have something under `## Unreleased`. It runs `just check`, bumps, checks the tag, runs `just check` again,
+and asks `Push to origin and publish vX? [y/N]`. Any answer but `y` undoes the bump. After `y` it commits "Release X",
+pushes, waits for CI to pass on that commit, and publishes the release on exactly that commit. It needs `gh` logged in.
 
 `just release-check v2026.11.24` runs the tag check locally. It compares numbers, so `2026.01.05` and `2026.1.5` count as
 the same version.
