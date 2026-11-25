@@ -39,7 +39,8 @@ also work, and give you a plain `agent-dish` command. Everywhere below, `agent-d
 ## What you get
 
 **The dish.** Each colour is a colony, titled by what it has been about lately. The glow underneath is a heat map of where
-work clusters, and the colony with the newest activity sits in the middle.
+work clusters. Colonies keep their place and grow around the spot where their first session appeared; cells fade the longer
+they sit idle.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/dish.png" alt="The dish: coloured colonies with titles, session counts and a heat-map floor" width="720">
