@@ -28,8 +28,9 @@ def next_version(today, tags):
 
 
 def date_changelog(text, version):
-    """Rename the '## Unreleased' heading to the version. Returns the new text, or None if there is no such heading."""
-    new, count = re.subn(r"^## Unreleased\s*$", f"## {version}", text, count=1, flags=re.M)
+    """Rename the '## Unreleased' heading to the version and put a fresh, empty '## Unreleased' above it for the next
+    change. Returns the new text, or None if there is no such heading."""
+    new, count = re.subn(r"^## Unreleased[ \t]*$", f"## Unreleased\n\n## {version}", text, count=1, flags=re.M)
     return new if count else None
 
 

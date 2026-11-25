@@ -6,7 +6,8 @@ The tag is `v` plus the version. The version lives in one place, `__version__` i
 ## A GitHub release
 
 1. Put the release notes under `## Unreleased` in `CHANGELOG.md`.
-2. `just bump` sets the version to today's date (or the next `.N` if today is taken) and dates that changelog section.
+2. `just bump` sets the version to today's date (or the next `.N` if today is taken), dates that changelog section and
+   leaves a fresh empty `## Unreleased` above it for the next change.
 3. Commit and push to `main`.
 4. Publish a release on GitHub with the tag `v` + the version `just bump` printed. Use the Releases page (create the tag
    there, targeting `main`) or `gh release create v2026.11.24 --target main --generate-notes`.

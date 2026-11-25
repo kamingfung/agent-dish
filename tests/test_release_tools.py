@@ -61,9 +61,19 @@ def test_bump_picks_todays_date_then_the_next_free_suffix():
 def test_bump_dates_the_unreleased_section_only():
     text = "# Changelog\n\n## Unreleased\n\n- a\n\n## 2026.10.01\n\n- b\n"
     out = bump.date_changelog(text, "2026.11.24")
-    assert "## 2026.11.24\n" in out and "## Unreleased" not in out and "## 2026.10.01" in out
+    assert "## 2026.11.24\n" in out and "## 2026.10.01" in out
+    assert out.count("## Unreleased") == 1 and out.index("## Unreleased") < out.index(
+        "## 2026.11.24"
+    )  # a fresh one on top
     assert bump.date_changelog("# Changelog\n\n## 2026.10.01\n", "2026.11.24") is None
     assert re.search(r"^## 2026\.11\.24$", out, re.M)
+
+
+def test_bump_keeps_the_blank_line_and_leaves_a_fresh_unreleased_heading():
+    out = bump.date_changelog("# Changelog\n\n## Unreleased\n\nFirst release.\n", "2026.11.24")
+    assert out == "# Changelog\n\n## Unreleased\n\n## 2026.11.24\n\nFirst release.\n"
+    again = bump.date_changelog(out, "2026.11.25")  # the next bump finds the heading, and the old notes stay put
+    assert again.count("## Unreleased") == 1 and "## 2026.11.25\n\n## 2026.11.24\n" in again
 
 
 def test_a_hostile_tag_name_is_never_run_as_a_command(tmp_path):
