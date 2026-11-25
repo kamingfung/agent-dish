@@ -24,7 +24,7 @@ def test_demo_is_well_formed_and_uses_every_agent():
         assert g["since"] <= n["start"] and n["end"] <= END
     for key, names in g["colonyNames"].items():
         assert names[0][1] == key and [d for d, _ in names] == sorted(d for d, _ in names)
-        assert all(b[0] - a[0] >= 3 * DAY for a, b in zip(names, names[1:]))  # titles drift slowly
+        assert all(b[0] - a[0] >= 3 * DAY - 3600 for a, b in zip(names, names[1:]))  # titles drift slowly
 
 
 def test_hand_off_file_names_fit_their_colony():

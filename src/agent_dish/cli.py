@@ -1,7 +1,7 @@
 """agent-dish command line: build a snapshot, or serve the live dish."""
 
 import argparse
-import calendar
+import datetime
 import http.server
 import json
 import os
@@ -18,9 +18,9 @@ from .themes import DAY
 
 
 def parse_since(text):
-    """YYYY-MM-DD -> epoch seconds (UTC midnight), or None when empty/invalid."""
+    """YYYY-MM-DD -> epoch seconds of local midnight (your time zone), or None when empty."""
     try:
-        return calendar.timegm(time.strptime(text, "%Y-%m-%d")) if text else None
+        return datetime.datetime.strptime(text, "%Y-%m-%d").timestamp() if text else None
     except ValueError:
         raise SystemExit(f"--since must look like 2026-10-01, got '{text}'") from None
 

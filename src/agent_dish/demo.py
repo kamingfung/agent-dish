@@ -8,7 +8,7 @@ import random
 import time
 
 from .adapters import ADAPTERS
-from .themes import DAY
+from .themes import DAY, day_start, local_day
 
 AGENTS = ("claude", "cowork", "kiro", "antigravity", "gemini", "codex")  # the order of the weights below
 
@@ -125,7 +125,7 @@ def demo_graph(days=30, end=None, seed=7):
     rng = random.Random(seed)
     end = end or time.time()
     cut = end - days * DAY
-    first_day = int(cut // DAY)
+    first_day = local_day(cut)
     used, nodes, by_colony = set(), [], {}
 
     def label():
@@ -178,7 +178,7 @@ def demo_graph(days=30, end=None, seed=7):
             for _ in range(n)
         ]
         by_colony[key] = sorted(members, key=lambda m: m["start"])
-        names[key] = [[first_day * DAY, key]] + [[(first_day + d) * DAY, name] for d, name in drift]
+        names[key] = [[day_start(first_day), key]] + [[day_start(first_day + d), name] for d, name in drift]
     for _ in range(46):  # sessions with no recurring phrase
         session(
             "unthemed",

@@ -64,7 +64,9 @@ let N, REAL, MAXOUT, T0, T1, START, userStart = 0;   // START: the chosen from-d
 const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'k' : String(Math.round(n));
 const base = p => p.split('/').pop();
 const hue = s => { let h = 0; for (const c of s) h = (h*31 + c.charCodeAt(0)) % 360; return h; };
-const date = t => t ? new Date(t*1000).toISOString().slice(0,10) : '';
+const p2 = n => String(n).padStart(2, '0');   // all dates and times below are in YOUR time zone, and days are cut at your midnight
+const date = t => { if (!t) return ''; const d = new Date(t*1000); return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; };
+const clock = t => { const d = new Date(t*1000); return `${date(t)} ${p2(d.getHours())}:${p2(d.getMinutes())} ${(new Date(t*1000).toLocaleTimeString('en-US', { timeZoneName:'short' }).split(' ').pop())}`; };
 const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const $ = id => document.getElementById(id);
 const tip = $('tip');
@@ -272,7 +274,7 @@ $('since').onchange = async ev => {  // served: rebuild the window from that dat
   if (location.protocol.startsWith('http')) {
     try { userStart = 0; load(await (await fetch('/graph.json?since=' + v, { cache:'no-store' })).json(), true); setDays(); } catch {}
   } else {
-    userStart = Date.parse(v + 'T00:00:00Z')/1000; index(); rebuildDish(); setDays(); now = T0;   // the play bar now starts here
+    userStart = new Date(v + 'T00:00:00').getTime()/1000; index(); rebuildDish(); setDays(); now = T0;   // the play bar now starts here
     if (sel && N.get(sel) && (N.get(sel).end < START || !included(N.get(sel)))) select(null);
   }
   playing = true; $('play').textContent = 'Pause';
@@ -314,7 +316,7 @@ load(DATA, true); layout(); rebuildDish(); setDays();
   for (const c of centers.values()) { c.x += (c.tx-c.x)*0.04; c.y += (c.ty-c.y)*0.04; }
   forces(dn, de, cellTarget, 0.05);
   for (const p of dn) { const lim = dishR() - 8 - radiusAt(p.d) - (p.d.divs.length ? 6 : 0), d = Math.hypot(p.x, p.y); if (d > lim) { p.x *= lim/d; p.y *= lim/d; p.vx *= -0.3; p.vy *= -0.3; } }
-  drawDish(); $('tot').textContent = fmt(dn.reduce((a, p) => a + grown(p.d, now), 0)) + ' output tokens so far'; $('clock').textContent = new Date(now*1000).toISOString().replace('T',' ').slice(0,16) + ' UTC';
+  drawDish(); $('tot').textContent = fmt(dn.reduce((a, p) => a + grown(p.d, now), 0)) + ' output tokens so far'; $('clock').textContent = clock(now);
   requestAnimationFrame(loop);
 })(0);
 // live mode: when served by `agent-dish serve`, re-read graph.json and keep growing

@@ -1,4 +1,4 @@
-from agent_dish.themes import DAY, colony_names, terms, themes_for
+from agent_dish.themes import DAY, colony_names, day_start, terms, themes_for
 
 
 def test_terms_drop_noise_and_make_phrases():
@@ -27,8 +27,8 @@ def test_colony_name_changes_with_the_work_but_not_every_day():
         **noise,
     }
     names = colony_names(by_day, {"s1": "alpha report", "s2": "alpha report"}, 0, 19)["alpha report"]
-    assert names[0] == [0, "alpha report"]
+    assert names[0] == [day_start(0), "alpha report"]
     later = [n for _, n in names[1:]]
     assert later and set(later[-1].split()) <= {"bravo", "review"}  # it followed the work (either word order)
     assert len(names) <= 4  # and did not flicker
-    assert all(b2[0] - a2[0] >= 3 * DAY for a2, b2 in zip(names, names[1:]))  # at least 3 days apart
+    assert all(b2[0] - a2[0] >= 3 * DAY - 3600 for a2, b2 in zip(names, names[1:]))  # at least 3 days apart

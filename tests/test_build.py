@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from agent_dish.build import build
@@ -51,8 +52,10 @@ def test_render_embeds_data_safely(roots):
 
 
 def test_parse_since():
-    assert parse_since("2026-10-01") == 1_790_812_800
     assert parse_since(None) is None
+    assert (
+        parse_since("2026-10-01") == datetime.datetime(2026, 10, 1).timestamp()
+    )  # local midnight; see test_timezone.py
 
 
 def test_agent_meta_labels_every_agent_present_and_flags_the_honest_caveats(roots):
