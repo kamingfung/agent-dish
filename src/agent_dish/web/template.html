@@ -45,10 +45,10 @@
     <div class="sub">Each dot is one agent session (Claude Code, Claude Cowork, Kiro, Antigravity, Gemini, Codex). The dish replays from <span id="legDays"></span>, then keeps growing live when served. Colony titles follow what each colony has been about in the last few days.</div>
     <div class="lr"><div style="flex:1"><b>Size = output tokens so far</b><span class="sub">The dot grows as the session produces tokens (log scale):</span><div id="sizeScale"></div></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="7" fill="#6a4fd6"/><circle cx="17" cy="15" r="11" fill="none" stroke="#6a4fd6" stroke-width="1.5"/></svg><div><b>Ring = working now</b><span class="sub">Produced output in the last 10 minutes.</span></div></div>
-    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="7" fill="#6a4fd6" opacity=".3"/></svg><div><b>Faded = dormant</b><span class="sub">Over an hour since its last message.</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="7" fill="#6a4fd6" opacity=".3"/></svg><div><b>Faded = idle</b><span class="sub">The longer since its last message, the fainter: an hour, a day, a week.</span></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="6" fill="#6a4fd6"/><g fill="#111"><circle cx="17" cy="4" r="1.6"/><circle cx="27" cy="12" r="1.6"/><circle cx="24" cy="25" r="1.6"/><circle cx="8" cy="23" r="1.6"/></g></svg><div><b>Black dots = sub-agents</b><span class="sub">Helpers it spawned (cell division).</span></div></div>
-    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="6" cy="15" r="4" fill="#2faa55"/><line x1="10" y1="15" x2="24" y2="15" stroke="#e0832f" stroke-width="2"/><circle cx="27" cy="15" r="4" fill="#6a4fd6"/><circle cx="27" cy="15" r="7.5" fill="none" stroke="#e0832f" stroke-width="1.5"/></svg><div><b>Orange line = hand-off</b><span class="sub">A later session read or edited a file this one wrote. The ring marks the receiver.</span></div></div>
-    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><defs><radialGradient id="lg"><stop offset="0" stop-color="#9ad0a8" stop-opacity=".8"/><stop offset="1" stop-color="#9ad0a8" stop-opacity="0"/></radialGradient></defs><circle cx="17" cy="15" r="14" fill="url(#lg)"/></svg><div><b>Middle = most recent</b><span class="sub">The colony with the newest activity sits in the centre and older colonies ring outward. Inside a colony the newest cell is at its centre and older ones spiral out. Unthemed sessions form the outer band.</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="6" cy="15" r="4" fill="#2faa55"/><line x1="10" y1="15" x2="24" y2="15" stroke="#e0832f" stroke-width="2"/><circle cx="27" cy="15" r="4" fill="#6a4fd6"/><circle cx="27" cy="15" r="7.5" fill="none" stroke="#e0832f" stroke-width="1.5"/></svg><div><b>Orange line = hand-off</b><span class="sub">A later session read or edited a file this one wrote. The ring marks the receiver. Lines are hidden until you tick <b>hand-offs</b> or click a cell; a new hand-off still pulses.</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><defs><radialGradient id="lg"><stop offset="0" stop-color="#9ad0a8" stop-opacity=".8"/><stop offset="1" stop-color="#9ad0a8" stop-opacity="0"/></radialGradient></defs><circle cx="17" cy="15" r="14" fill="url(#lg)"/></svg><div><b>Fixed places</b><span class="sub">A colony appears at its own spot when its first session starts and grows around it. It never moves. How recent a cell is shows in how bright it is: full while in use, fading with each hour, day and week idle. Unthemed sessions form the outer band.</span></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="3" fill="#6a4fd6"/><circle cx="24" cy="11" r="3" fill="#6a4fd6" opacity=".7"/><circle cx="22" cy="21" r="3" fill="#6a4fd6" opacity=".5"/><circle cx="10" cy="20" r="3" fill="#6a4fd6" opacity=".35"/></svg><div><b>Colony = theme</b><span class="sub">Sessions whose prompts and files share a recurring phrase form a colony, named by that phrase. The rest are unthemed (grey-blue).</span></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><defs><radialGradient id="h1"><stop offset="0" stop-color="#e0527a" stop-opacity=".85"/><stop offset="1" stop-color="#e0527a" stop-opacity="0"/></radialGradient><radialGradient id="h2"><stop offset="0" stop-color="#3aa6d8" stop-opacity=".85"/><stop offset="1" stop-color="#3aa6d8" stop-opacity="0"/></radialGradient></defs><circle cx="11" cy="15" r="12" fill="url(#h1)"/><circle cx="22" cy="15" r="12" fill="url(#h2)"/></svg><div><b>Floor glow = heat map</b><span class="sub">Each cell tints the dish around it in its colour. Glows blend where colonies meet and run stronger where more is happening.</span></div></div>
   </div></div>
@@ -56,7 +56,7 @@
   <div id="ctl"><button id="play">Pause</button><input type="range" id="scrub" min="0" max="1000" value="0">
     <button id="shufBtn" title="new random colours">Shuffle colours</button><button id="nowBtn" title="jump to the newest activity and follow it">Now</button>
     <select id="speed"><option value="0.5">slow</option><option value="1" selected>normal</option><option value="3">fast</option></select>
-    <label class="mute" title="sessions with no recurring phrase"><input type="checkbox" id="unth"> unthemed</label><span id="clock" class="mute" style="min-width:150px"></span><span id="tot" class="mute" style="min-width:170px"></span></div>
+    <label class="mute" title="sessions with no recurring phrase"><input type="checkbox" id="unth"> unthemed</label><label class="mute" title="draw a line from each session to the ones that built on it"><input type="checkbox" id="hand"> hand-offs</label><span id="clock" class="mute" style="min-width:150px"></span><span id="tot" class="mute" style="min-width:170px"></span></div>
 </div>
 <script>
 let DATA = /*DATA*/null;
@@ -64,12 +64,15 @@ let N, REAL, MAXOUT, T0, T1, START, userStart = 0;   // START: the chosen from-d
 const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'k' : String(Math.round(n));
 const base = p => p.split('/').pop();
 const hue = s => { let h = 0; for (const c of s) h = (h*31 + c.charCodeAt(0)) % 360; return h; };
-const date = t => t ? new Date(t*1000).toISOString().slice(0,10) : '';
+const p2 = n => String(n).padStart(2, '0');   // all dates and times below are in YOUR time zone, and days are cut at your midnight
+const date = t => { if (!t) return ''; const d = new Date(t*1000); return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; };
+const clock = t => { const d = new Date(t*1000); return `${date(t)} ${p2(d.getHours())}:${p2(d.getMinutes())} ${(new Date(t*1000).toLocaleTimeString('en-US', { timeZoneName:'short' }).split(' ').pop())}`; };
 const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const $ = id => document.getElementById(id);
 const tip = $('tip');
 let sel = null, frame = 0, drag = null, alpha = 1;
 const QUERY = new URLSearchParams(location.search);   // ?seed=40 fixes the colours
+let showHandoffs = (() => { try { return localStorage.getItem('agent-dish-handoffs') === '1'; } catch { return false; } })();   // off by default: the lines tangle on a busy dish
 let showUnthemed = (() => { try { return localStorage.getItem('agent-dish-unthemed') === '1'; } catch { return false; } })();
 const nameAt = (key, t) => { const a = (DATA.colonyNames || {})[key]; if (!a) return key; let name = key; for (const [d, nm] of a) { if (d <= t) name = nm; else break; } return name; };
 
@@ -124,8 +127,34 @@ const nodeTip = n => `${n.label}\n${n.agent} · ${n.project}${n.branch ? ' · '+
 // ================= 4. PETRI DISH (time-lapse / live) =================
 const dc = $('dish'), dx = dc.getContext('2d'); let DW = 0, DH = 0, dn = [], de = [], centers = new Map(), now = 0, playing = true, lastF = 0, atEnd = false;
 const dishR = () => Math.max(100, Math.min(DW, DH-70)/2 - 14);
+const fadeOf = n => { const h = (now - n.end)/3600; return h <= 1 ? 1 : Math.max(0.12, 0.7 - 0.2*Math.log10(h)); };  // in use: full; an hour idle: 0.7; a day: 0.42; a week: 0.26; a month: 0.12
 const lastActive = n => Math.max(lastGrowth(n), n.start);  // newest thing this cell did, as of the dish clock
-let rankOf = new Map();  // cell id -> 0 = newest in its colony
+let rankOf = new Map();  // cell id -> its birth order in its colony (0 = the first session)
+// HOMES-BEGIN
+// (tests/test_homes.py runs this block under node.)
+// Fixed homes. A colony's spot comes from its name alone (a seeded random place that keeps clear of colonies placed
+// before it), so it never moves. Its cells grow around it in birth order. Computed from ALL sessions, so a filter or a
+// from-date does not shuffle anything; a colony that appears later is placed among the ones already there.
+const homes = new Map(), birth = new Map();
+const hash32 = s => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
+const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+function placeHomes() {
+  const by = new Map(); for (const n of REAL) { if (!by.has(n.theme)) by.set(n.theme, []); by.get(n.theme).push(n); }
+  for (const ns of by.values()) { ns.sort((a, b) => a.start - b.start); ns.forEach((n, k) => birth.set(n.id, k)); }
+  const fresh = [...by].filter(([k]) => k !== 'unthemed' && !homes.has(k)).map(([name, ns]) => ({ name, first: ns[0].start, rc: (12*Math.sqrt(ns.length + 0.6) + 8)/400 }))
+    .sort((a, b) => a.first - b.first || (a.name < b.name ? -1 : 1));
+  const placed = [...homes].map(([name, h]) => ({ name, u: h.u, v: h.v, rc: (12*Math.sqrt((by.get(name)?.length || 1) + 0.6) + 8)/400 }));
+  for (const c of fresh) {
+    const rnd = mulberry(hash32(c.name)); let best = null, bestGap = -1e9;
+    for (let i = 0; i < 400; i++) {
+      const a = rnd()*6.283, d = Math.sqrt(rnd())*(0.9 - c.rc), u = Math.cos(a)*d, v = Math.sin(a)*d;
+      let gap = 1e9; for (const o of placed) gap = Math.min(gap, Math.hypot(u - o.u, v - o.v) - o.rc - c.rc - 0.02);
+      if (gap > bestGap) { bestGap = gap; best = { u, v }; } if (gap >= 0) break;
+    }
+    homes.set(c.name, best); placed.push({ name: c.name, u: best.u, v: best.v, rc: c.rc });
+  }
+}
+// HOMES-END
 function rebuildDish() {
   const live = REAL.filter(n => n.out > 0 && n.end >= START && included(n) && (showUnthemed || n.theme !== 'unthemed')), counts = new Map(); for (const n of live) counts.set(n.theme, (counts.get(n.theme) || 0) + 1);
   const maxC = Math.max(1, ...[...counts].filter(([k]) => k !== 'unthemed').map(([, v]) => v)), prev = centers; centers = new Map();
@@ -141,26 +170,21 @@ function rebuildDish() {
 // middle, older ones ring outward, and "unthemed" is the outer band. Inside a colony the newest cell is at its
 // centre and older ones spiral outward, like tree rings.
 function retarget(snap) {
+  if (!homes.size || REAL.some(n => n.theme !== 'unthemed' && !birth.has(n.id))) placeHomes();
   const R = dishR(), by = new Map();
   for (const p of dn) { const c = centers.get(p.d.theme); if (!by.has(c)) by.set(c, []); by.get(c).push(p); }
   for (const [c, ps] of by) {
     const started = ps.filter(p => p.d.start <= now).sort((a, b) => lastActive(b.d) - lastActive(a.d));
     c.last = started.length ? lastActive(started[0].d) : 0; c.live = started.length;   // how many of its cells exist yet at the dish clock
-    started.forEach((p, i) => rankOf.set(p.d.id, i)); ps.filter(p => p.d.start > now).forEach(p => rankOf.set(p.d.id, ps.length));
+    ps.forEach(p => rankOf.set(p.d.id, birth.get(p.d.id) ?? 0));
   }
-  const themed = [...centers.values()].filter(c => c.name !== 'unthemed' && c.live > 0).sort((a, b) => b.last - a.last || b.count - a.count), ring1 = 5;
-  for (const c of centers.values()) if (c.name !== 'unthemed' && !c.live) { c.tx = Math.cos(c.seed*9)*R*0.8; c.ty = Math.sin(c.seed*9)*R*0.8; }  // not born yet: parked, unseen
-  themed.forEach((c, i) => {
-    if (i === 0) { c.tx = 0; c.ty = 0; return; }
-    const inner = i <= ring1, k = inner ? i-1 : i-1-ring1, m = inner ? Math.min(ring1, themed.length-1) : themed.length-1-ring1, a = k/Math.max(1, m)*6.283 - 1.57 + (inner ? 0 : 0.3);
-    const rr = R*(inner ? (showUnthemed ? 0.34 : 0.55) : (showUnthemed ? 0.64 : 0.80)); c.tx = Math.cos(a)*rr; c.ty = Math.sin(a)*rr;
-  });
+  for (const c of centers.values()) { const h = homes.get(c.name); if (c.name !== 'unthemed' && h) { c.tx = h.u*R; c.ty = h.v*R; } }   // fixed homes
   if (snap) for (const c of centers.values()) { c.x = c.tx; c.y = c.ty; }
 }
 function cellTarget(p) {
   const c = centers.get(p.d.theme), rk = rankOf.get(p.d.id) ?? 0, R = dishR();
   if (c.name === 'unthemed') { const d = Math.hypot(p.x, p.y) || 1, rr = R*(0.72 + 0.17*rk/Math.max(1, c.count)); return { x:p.x/d*rr, y:p.y/d*rr }; }
-  const a = rk*2.39996 + c.seed, dd = 12*Math.sqrt(rk + 0.6); return { x:c.x + Math.cos(a)*dd, y:c.y + Math.sin(a)*dd };
+  const a = rk*2.39996 + c.seed, dd = 12*Math.sqrt(rk + 0.6)*Math.max(0.75, Math.min(1.3, R/400)); return { x:c.x + Math.cos(a)*dd, y:c.y + Math.sin(a)*dd };
 }
 // Heat map: every visible cell splats a gaussian glow in its colour; where cells cluster the glows add up
 // and blend, so the floor takes the colour of its neighbourhood and is stronger where there is more going on.
@@ -170,7 +194,7 @@ function heatMap(R) {
   if (!heatC || heatC.width !== gw) { heatC = document.createElement('canvas'); heatC.width = heatC.height = gw; heatX = heatC.getContext('2d'); heatImg = heatX.createImageData(gw, gw); }
   const D = new Float32Array(gw*gw), Rr = new Float32Array(gw*gw), G = new Float32Array(gw*gw), B = new Float32Array(gw*gw);
   for (const p of dn) { const n = p.d; if (n.start > now) continue;
-    const w0 = (radiusAt(n) + 1.5) * (now <= n.end + 3600 ? 1 : 0.35), [cr, cg, cb] = tcol(n.theme).rgb, gx = (p.x + R)/gs, gy = (p.y + R)/gs;
+    const w0 = (radiusAt(n) + 1.5) * (now <= n.end + 3600 ? 1 : 0.35*fadeOf(n)/0.7), [cr, cg, cb] = tcol(n.theme).rgb, gx = (p.x + R)/gs, gy = (p.y + R)/gs;
     for (let j = Math.max(0, Math.floor(gy) - ext); j <= Math.min(gw-1, Math.floor(gy) + ext); j++) for (let i = Math.max(0, Math.floor(gx) - ext); i <= Math.min(gw-1, Math.floor(gx) + ext); i++) {
       const w = w0*Math.exp(-((i-gx)**2 + (j-gy)**2)/(2*sig*sig)), k = j*gw + i; D[k] += w; Rr[k] += w*cr; G[k] += w*cg; B[k] += w*cb; } }
   const px = heatImg.data;
@@ -190,13 +214,14 @@ function drawDish() {
   dx.beginPath(); dx.arc(0, 0, R-4, 0, 7); dx.clip();
   heatMap(R);
   const span = 1800; // seconds a pulse lasts in sim time
-  for (const {s,t,e} of de) if (e.t <= now) { const age = now-e.t, hot = age < span*8;
-    dx.beginPath(); dx.moveTo(s.x,s.y); dx.lineTo(t.x,t.y); dx.strokeStyle = '#e0832f'; dx.globalAlpha = hot ? 0.9 : 0.25; dx.lineWidth = hot ? 2 : 1; dx.stroke();
-    if (hot) { dx.globalAlpha = 1-age/(span*8); dx.beginPath(); dx.arc(t.x, t.y, radiusAt(t.d)+4+age/span*3, 0, 7); dx.stroke(); } }
+  for (const {s,t,e} of de) if (e.t <= now) { const age = now-e.t, hot = age < span*8, mine = sel && (s.d.id === sel || t.d.id === sel);
+    dx.strokeStyle = '#e0832f';
+    if (showHandoffs || mine) { dx.beginPath(); dx.moveTo(s.x,s.y); dx.lineTo(t.x,t.y); dx.globalAlpha = hot || mine ? 0.9 : 0.25; dx.lineWidth = hot || mine ? 2 : 1; dx.stroke(); }
+    if (hot) { dx.globalAlpha = 1-age/(span*8); dx.lineWidth = hot ? 2 : 1; dx.beginPath(); dx.arc(t.x, t.y, radiusAt(t.d)+4+age/span*3, 0, 7); dx.stroke(); } }   // a fresh hand-off still pulses when the lines are hidden
   dx.globalAlpha = 1;
   for (const p of dn) { const n = p.d; if (n.start > now) continue;
     const r = radiusAt(n), alive = now <= n.end + 3600, c = dishColor(n);
-    dx.globalAlpha = alive ? 1 : 0.35; dx.beginPath(); dx.arc(p.x, p.y, r, 0, 7); dx.fillStyle = c; dx.fill();
+    dx.globalAlpha = fadeOf(n); dx.beginPath(); dx.arc(p.x, p.y, r, 0, 7); dx.fillStyle = c; dx.fill();
     if (alive && now - lastGrowth(n) < 600) { dx.strokeStyle = c; dx.lineWidth = 1; dx.beginPath(); dx.arc(p.x, p.y, r+3, 0, 7); dx.stroke(); }
     let k = 0; for (const t of n.divs) if (t <= now) { const a = (k++ * 2.4) + p.x, rr = r + 4 + (now-t < 3600 ? 4 : 0); // a daughter cell budding off
       dx.beginPath(); dx.arc(p.x+Math.cos(a)*rr, p.y+Math.sin(a)*rr, 1.8, 0, 7); dx.fillStyle = '#111'; dx.fill(); }
@@ -272,7 +297,7 @@ $('since').onchange = async ev => {  // served: rebuild the window from that dat
   if (location.protocol.startsWith('http')) {
     try { userStart = 0; load(await (await fetch('/graph.json?since=' + v, { cache:'no-store' })).json(), true); setDays(); } catch {}
   } else {
-    userStart = Date.parse(v + 'T00:00:00Z')/1000; index(); rebuildDish(); setDays(); now = T0;   // the play bar now starts here
+    userStart = new Date(v + 'T00:00:00').getTime()/1000; index(); rebuildDish(); setDays(); now = T0;   // the play bar now starts here
     if (sel && N.get(sel) && (N.get(sel).end < START || !included(N.get(sel)))) select(null);
   }
   playing = true; $('play').textContent = 'Pause';
@@ -301,6 +326,8 @@ $('legToggle').onclick = () => showLegend($('legend').style.display === 'none');
 showLegend((() => { try { return localStorage.getItem('agent-dish-legend') !== '0'; } catch { return true; } })());
 
 // ================= wiring =================
+$('hand').checked = showHandoffs;
+$('hand').onchange = ev => { showHandoffs = ev.target.checked; try { localStorage.setItem('agent-dish-handoffs', showHandoffs ? '1' : '0'); } catch {} };
 $('unth').checked = showUnthemed;
 $('unth').onchange = ev => { showUnthemed = ev.target.checked; try { localStorage.setItem('agent-dish-unthemed', showUnthemed ? '1' : '0'); } catch {} rebuildDish(); };
 function layout() { [DW,DH] = fitTo(dc); }
@@ -314,7 +341,7 @@ load(DATA, true); layout(); rebuildDish(); setDays();
   for (const c of centers.values()) { c.x += (c.tx-c.x)*0.04; c.y += (c.ty-c.y)*0.04; }
   forces(dn, de, cellTarget, 0.05);
   for (const p of dn) { const lim = dishR() - 8 - radiusAt(p.d) - (p.d.divs.length ? 6 : 0), d = Math.hypot(p.x, p.y); if (d > lim) { p.x *= lim/d; p.y *= lim/d; p.vx *= -0.3; p.vy *= -0.3; } }
-  drawDish(); $('tot').textContent = fmt(dn.reduce((a, p) => a + grown(p.d, now), 0)) + ' output tokens so far'; $('clock').textContent = new Date(now*1000).toISOString().replace('T',' ').slice(0,16) + ' UTC';
+  drawDish(); $('tot').textContent = fmt(dn.reduce((a, p) => a + grown(p.d, now), 0)) + ' output tokens so far'; $('clock').textContent = clock(now);
   requestAnimationFrame(loop);
 })(0);
 // live mode: when served by `agent-dish serve`, re-read graph.json and keep growing

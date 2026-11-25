@@ -7,6 +7,7 @@ the work does. Prompt text is only read in memory; callers store the chosen phra
 """
 
 import collections
+import datetime
 import getpass
 import math
 import os
@@ -334,6 +335,19 @@ STOP |= {w.lower() for w in re.split(r"\W+", os.path.basename(os.path.expanduser
 
 TOKEN = re.compile(r"[a-z][a-z\-]{2,24}")
 DAY = 86400
+
+
+def local_day(t):
+    """The local calendar day of epoch seconds `t`, as a day number (days since 1970-01-01 in your own time zone).
+    Days are cut at local midnight, so a late-evening session counts for the day you lived it."""
+    return datetime.datetime.fromtimestamp(t).date().toordinal() - 719163  # 719163 = date(1970, 1, 1).toordinal()
+
+
+def day_start(d):
+    """Epoch seconds of local midnight that starts day number `d` (the inverse of local_day)."""
+    return datetime.datetime.combine(datetime.date.fromordinal(d + 719163), datetime.time()).timestamp()
+
+
 MIN_DAYS_BETWEEN = 3  # a colony keeps its title at least this long
 SWITCH_MARGIN = 1.6  # the new title must score this many times the current one
 
@@ -427,7 +441,7 @@ def colony_names(by_day, assign, first_day, last_day, window=3):
         return 2.0 if " " in term else 1.0
 
     for key, sids in members.items():
-        names, cur, changed = [[first_day * DAY, key]], key, first_day
+        names, cur, changed = [[day_start(first_day), key]], key, first_day
         for d in range(first_day, last_day + 1):
             win = collections.defaultdict(int)  # term -> number of this colony's sessions using it in the window
             for sid in sids:
@@ -449,7 +463,7 @@ def colony_names(by_day, assign, first_day, last_day, window=3):
             held = win.get(cur, 0) * idf(cur) * boost(cur)
             # a name sticks: the new one must clearly beat the current one, and not too soon after the last change
             if best and best != cur and d - changed >= MIN_DAYS_BETWEEN and score > SWITCH_MARGIN * held:
-                names.append([d * DAY, best])
+                names.append([day_start(d), best])
                 cur, changed = best, d
         out[key] = names
     return out

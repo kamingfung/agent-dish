@@ -7,7 +7,7 @@ import os
 import time
 
 from .adapters import selected
-from .themes import DAY, colony_names, path_terms, terms, themes_for
+from .themes import DAY, colony_names, local_day, path_terms, terms, themes_for
 
 
 def data_dir():
@@ -105,7 +105,7 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
                 if n["slug"]:
                     s["label"] = n["slug"]
                 if n["branch"]:
-                    by_day[sid][int(n["lo"] // DAY)] += terms(n["branch"].replace("/", " ").replace("-", " "))
+                    by_day[sid][local_day(n["lo"])] += terms(n["branch"].replace("/", " ").replace("-", " "))
             for sid, key, t in r["subs"]:
                 if sid in S and t >= cut:
                     sub_starts.append((sid, (adapter.name, key), t))
@@ -123,10 +123,10 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
                 if len(m["events"]) > len(cur["events"]):
                     cur["events"] = m["events"]
                 for _, p, t in m["events"]:
-                    by_day[m["sid"]][int(t // DAY)] += path_terms(p)
+                    by_day[m["sid"]][local_day(t)] += path_terms(p)
             for sid, t, txt in r["prompts"]:
                 if t >= cut and sid in S:
-                    by_day[sid][int(t // DAY)] += terms(txt)
+                    by_day[sid][local_day(t)] += terms(txt)
 
     growth, events, written = collections.defaultdict(list), collections.defaultdict(list), collections.defaultdict(set)
     for rec in msgs.values():
@@ -160,7 +160,7 @@ def build(days=30, agents="all", out_dir=None, now=None, log=print, since=None):
 
     totals = {sid: sum(days_.values(), collections.Counter()) for sid, days_ in by_day.items() if sid in S}
     theme = themes_for(totals)
-    names = colony_names({s: d for s, d in by_day.items() if s in S}, theme, int(cut // DAY), int(now // DAY))
+    names = colony_names({s: d for s, d in by_day.items() if s in S}, theme, local_day(cut), local_day(now))
 
     divs = collections.defaultdict(list)
     for sid, _, t in sub_starts:

@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Hand-off lines are hidden by default, because they tangle on a busy dish. Tick **hand-offs** to show them all, or click a
+  cell to see its own. A new hand-off still pulses with a ring.
+
+- Colonies keep their place, like a real culture. A colony appears at its own spot (chosen from its name, so the same
+  every time) when its first session starts, and grows around that spot. Before, colonies and cells moved as others
+  became active. Recency now shows as brightness: cells fade the longer they sit idle (an hour, a day, a week), instead of one dormant step.
+
+- Dates and times use your local time zone, and days are cut at your midnight, not UTC midnight. This covers the page's
+  clock and dates, `--since` and `--end`, and the day a session counts toward when colonies are named. A session you ran at
+  22:30 now counts for that evening. Under `agent-dish serve`, the colony names follow the time zone of the machine it runs on.
+
 ## 2026.11.24.2
 
 First release.

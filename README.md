@@ -39,7 +39,8 @@ also work, and give you a plain `agent-dish` command. Everywhere below, `agent-d
 ## What you get
 
 **The dish.** Each colour is a colony, titled by what it has been about lately. The glow underneath is a heat map of where
-work clusters, and the colony with the newest activity sits in the middle.
+work clusters. Colonies keep their place and grow around the spot where their first session appeared; cells fade the longer
+they sit idle.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/kamingfung/agent-dish/main/docs/media/dish.png" alt="The dish: coloured colonies with titles, session counts and a heat-map floor" width="720">
@@ -84,7 +85,7 @@ environment variable (`AGENT_DISH_CLAUDE_ROOT`, `..._COWORK_ROOT`, `..._KIRO_ROO
 ```bash
 agent-dish serve --open                 # live dish at http://127.0.0.1:3474 (a random free port if busy), last 30 days
 agent-dish serve --port 4000          # another primary port; if it is busy a random free one is used
-agent-dish serve --since 2026-10-01     # start from a date instead (you can also pick one in the page)
+agent-dish serve --since 2026-10-01     # start from a date instead (you can also pick one in the page); local midnight
 agent-dish serve --agents claude,kiro   # only some agents
 agent-dish build --out .                # one self-contained agent-dish.html snapshot
 agent-dish agents                       # which agents' sessions were found on this machine
