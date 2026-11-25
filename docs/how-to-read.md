@@ -17,7 +17,7 @@ Pick the start date with the **from** box in the header (a snapshot can only sta
 | Ring around a cell      | It produced output in the last 10 minutes of dish time.                                                                                                                                           |
 | Faded cell              | Idle: the longer since its last message, the fainter (about 70% after an hour, 40% after a day, 25% after a week).                                                                                |
 | Black dots              | Sub-agents it has spawned so far (divisions).                                                                                                                                                     |
-| Orange line             | A hand-off: a later session read or edited a file this one wrote. The expanding ring marks the session that built on it.                                                                          |
+| Orange line             | A hand-off: a later session read or edited a file this one wrote. The expanding ring marks the session that built on it. Hidden by default; tick **hand-offs**, or click a cell to see its own.   |
 | Grey cells (when shown) | Sessions with no recurring phrase. Hidden by default; tick **unthemed** to show them as an outer band.                                                                                            |
 
 ## Controls

@@ -47,7 +47,7 @@
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="7" fill="#6a4fd6"/><circle cx="17" cy="15" r="11" fill="none" stroke="#6a4fd6" stroke-width="1.5"/></svg><div><b>Ring = working now</b><span class="sub">Produced output in the last 10 minutes.</span></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="7" fill="#6a4fd6" opacity=".3"/></svg><div><b>Faded = idle</b><span class="sub">The longer since its last message, the fainter: an hour, a day, a week.</span></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="6" fill="#6a4fd6"/><g fill="#111"><circle cx="17" cy="4" r="1.6"/><circle cx="27" cy="12" r="1.6"/><circle cx="24" cy="25" r="1.6"/><circle cx="8" cy="23" r="1.6"/></g></svg><div><b>Black dots = sub-agents</b><span class="sub">Helpers it spawned (cell division).</span></div></div>
-    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="6" cy="15" r="4" fill="#2faa55"/><line x1="10" y1="15" x2="24" y2="15" stroke="#e0832f" stroke-width="2"/><circle cx="27" cy="15" r="4" fill="#6a4fd6"/><circle cx="27" cy="15" r="7.5" fill="none" stroke="#e0832f" stroke-width="1.5"/></svg><div><b>Orange line = hand-off</b><span class="sub">A later session read or edited a file this one wrote. The ring marks the receiver.</span></div></div>
+    <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="6" cy="15" r="4" fill="#2faa55"/><line x1="10" y1="15" x2="24" y2="15" stroke="#e0832f" stroke-width="2"/><circle cx="27" cy="15" r="4" fill="#6a4fd6"/><circle cx="27" cy="15" r="7.5" fill="none" stroke="#e0832f" stroke-width="1.5"/></svg><div><b>Orange line = hand-off</b><span class="sub">A later session read or edited a file this one wrote. The ring marks the receiver. Lines are hidden until you tick <b>hand-offs</b> or click a cell; a new hand-off still pulses.</span></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><defs><radialGradient id="lg"><stop offset="0" stop-color="#9ad0a8" stop-opacity=".8"/><stop offset="1" stop-color="#9ad0a8" stop-opacity="0"/></radialGradient></defs><circle cx="17" cy="15" r="14" fill="url(#lg)"/></svg><div><b>Fixed places</b><span class="sub">A colony appears at its own spot when its first session starts and grows around it. It never moves. How recent a cell is shows in how bright it is: full while in use, fading with each hour, day and week idle. Unthemed sessions form the outer band.</span></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><circle cx="17" cy="15" r="3" fill="#6a4fd6"/><circle cx="24" cy="11" r="3" fill="#6a4fd6" opacity=".7"/><circle cx="22" cy="21" r="3" fill="#6a4fd6" opacity=".5"/><circle cx="10" cy="20" r="3" fill="#6a4fd6" opacity=".35"/></svg><div><b>Colony = theme</b><span class="sub">Sessions whose prompts and files share a recurring phrase form a colony, named by that phrase. The rest are unthemed (grey-blue).</span></div></div>
     <div class="lr"><svg width="34" height="30" viewBox="0 0 34 30"><defs><radialGradient id="h1"><stop offset="0" stop-color="#e0527a" stop-opacity=".85"/><stop offset="1" stop-color="#e0527a" stop-opacity="0"/></radialGradient><radialGradient id="h2"><stop offset="0" stop-color="#3aa6d8" stop-opacity=".85"/><stop offset="1" stop-color="#3aa6d8" stop-opacity="0"/></radialGradient></defs><circle cx="11" cy="15" r="12" fill="url(#h1)"/><circle cx="22" cy="15" r="12" fill="url(#h2)"/></svg><div><b>Floor glow = heat map</b><span class="sub">Each cell tints the dish around it in its colour. Glows blend where colonies meet and run stronger where more is happening.</span></div></div>
@@ -56,7 +56,7 @@
   <div id="ctl"><button id="play">Pause</button><input type="range" id="scrub" min="0" max="1000" value="0">
     <button id="shufBtn" title="new random colours">Shuffle colours</button><button id="nowBtn" title="jump to the newest activity and follow it">Now</button>
     <select id="speed"><option value="0.5">slow</option><option value="1" selected>normal</option><option value="3">fast</option></select>
-    <label class="mute" title="sessions with no recurring phrase"><input type="checkbox" id="unth"> unthemed</label><span id="clock" class="mute" style="min-width:150px"></span><span id="tot" class="mute" style="min-width:170px"></span></div>
+    <label class="mute" title="sessions with no recurring phrase"><input type="checkbox" id="unth"> unthemed</label><label class="mute" title="draw a line from each session to the ones that built on it"><input type="checkbox" id="hand"> hand-offs</label><span id="clock" class="mute" style="min-width:150px"></span><span id="tot" class="mute" style="min-width:170px"></span></div>
 </div>
 <script>
 let DATA = /*DATA*/null;
@@ -72,6 +72,7 @@ const $ = id => document.getElementById(id);
 const tip = $('tip');
 let sel = null, frame = 0, drag = null, alpha = 1;
 const QUERY = new URLSearchParams(location.search);   // ?seed=40 fixes the colours
+let showHandoffs = (() => { try { return localStorage.getItem('agent-dish-handoffs') === '1'; } catch { return false; } })();   // off by default: the lines tangle on a busy dish
 let showUnthemed = (() => { try { return localStorage.getItem('agent-dish-unthemed') === '1'; } catch { return false; } })();
 const nameAt = (key, t) => { const a = (DATA.colonyNames || {})[key]; if (!a) return key; let name = key; for (const [d, nm] of a) { if (d <= t) name = nm; else break; } return name; };
 
@@ -213,9 +214,10 @@ function drawDish() {
   dx.beginPath(); dx.arc(0, 0, R-4, 0, 7); dx.clip();
   heatMap(R);
   const span = 1800; // seconds a pulse lasts in sim time
-  for (const {s,t,e} of de) if (e.t <= now) { const age = now-e.t, hot = age < span*8;
-    dx.beginPath(); dx.moveTo(s.x,s.y); dx.lineTo(t.x,t.y); dx.strokeStyle = '#e0832f'; dx.globalAlpha = hot ? 0.9 : 0.25; dx.lineWidth = hot ? 2 : 1; dx.stroke();
-    if (hot) { dx.globalAlpha = 1-age/(span*8); dx.beginPath(); dx.arc(t.x, t.y, radiusAt(t.d)+4+age/span*3, 0, 7); dx.stroke(); } }
+  for (const {s,t,e} of de) if (e.t <= now) { const age = now-e.t, hot = age < span*8, mine = sel && (s.d.id === sel || t.d.id === sel);
+    dx.strokeStyle = '#e0832f';
+    if (showHandoffs || mine) { dx.beginPath(); dx.moveTo(s.x,s.y); dx.lineTo(t.x,t.y); dx.globalAlpha = hot || mine ? 0.9 : 0.25; dx.lineWidth = hot || mine ? 2 : 1; dx.stroke(); }
+    if (hot) { dx.globalAlpha = 1-age/(span*8); dx.lineWidth = hot ? 2 : 1; dx.beginPath(); dx.arc(t.x, t.y, radiusAt(t.d)+4+age/span*3, 0, 7); dx.stroke(); } }   // a fresh hand-off still pulses when the lines are hidden
   dx.globalAlpha = 1;
   for (const p of dn) { const n = p.d; if (n.start > now) continue;
     const r = radiusAt(n), alive = now <= n.end + 3600, c = dishColor(n);
@@ -324,6 +326,8 @@ $('legToggle').onclick = () => showLegend($('legend').style.display === 'none');
 showLegend((() => { try { return localStorage.getItem('agent-dish-legend') !== '0'; } catch { return true; } })());
 
 // ================= wiring =================
+$('hand').checked = showHandoffs;
+$('hand').onchange = ev => { showHandoffs = ev.target.checked; try { localStorage.setItem('agent-dish-handoffs', showHandoffs ? '1' : '0'); } catch {} };
 $('unth').checked = showUnthemed;
 $('unth').onchange = ev => { showUnthemed = ev.target.checked; try { localStorage.setItem('agent-dish-unthemed', showUnthemed ? '1' : '0'); } catch {} rebuildDish(); };
 function layout() { [DW,DH] = fitTo(dc); }
